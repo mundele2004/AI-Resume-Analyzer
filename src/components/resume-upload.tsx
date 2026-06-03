@@ -9,6 +9,10 @@ import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+type ParseResumeResponse =
+  | { success: true; text: string }
+  | { success: false; error?: string };
+
 function formatFileSize(bytes: number) {
   const megabytes = bytes / (1024 * 1024);
 
@@ -36,6 +40,7 @@ function getValidationMessage(rejection: FileRejection) {
 export function ResumeUpload({ children }: { children: ReactNode }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
@@ -67,6 +72,39 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
     });
 
   const hasSelectedFile = Boolean(selectedFile);
+
+  async function handleAnalyzeResume() {
+    if (!selectedFile || isAnalyzing) {
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setErrors([]);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/parse-resume", {
+        method: "POST",
+        body: formData,
+      });
+      const result = (await response.json()) as ParseResumeResponse;
+
+      if (!result.success) {
+        setErrors([result.error ?? "Unable to analyze this resume."]);
+        return;
+      }
+
+      console.log("Extracted resume text:", result.text);
+    } catch (error) {
+      console.error("Resume analysis failed:", error);
+      setErrors(["Unable to analyze this resume. Please try again."]);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
   const statusMessage = useMemo(() => {
     if (selectedFile) {
       return "Resume uploaded successfully";
@@ -86,11 +124,12 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
 
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <Button
-            disabled={!hasSelectedFile}
+            disabled={!hasSelectedFile || isAnalyzing}
+            onClick={handleAnalyzeResume}
             className="h-12 px-6 text-base shadow-lg shadow-blue-950/10 transition-transform hover:-translate-y-0.5"
           >
             <UploadCloud className="size-5" aria-hidden="true" />
-            Analyze Resume
+            {isAnalyzing ? "Analyzing..." : "Analyze Resume"}
           </Button>
           <Button
             variant="outline"
@@ -186,4 +225,3 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
