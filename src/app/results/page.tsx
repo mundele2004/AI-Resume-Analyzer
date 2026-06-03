@@ -27,11 +27,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 const RESULTS_STORAGE_KEY = "ats-analysis-result";
 
 type AtsAnalysis = {
   atsScore: number;
+  breakdown: {
+    contact: number;
+    skills: number;
+    projects: number;
+    experience: number;
+    education: number;
+    keywords: number;
+  };
   skills: string[];
   strengths: string[];
   weaknesses: string[];
@@ -76,13 +90,20 @@ function isStoredResults(value: unknown): value is StoredResults {
 
   const candidate = value as Partial<StoredResults>;
   const analysis = candidate.analysis;
+  const breakdown = analysis?.breakdown;
 
-  if (!analysis) {
+  if (!analysis || !breakdown) {
     return false;
   }
 
   const validAnalysis =
     typeof analysis.atsScore === "number" &&
+    typeof breakdown.contact === "number" &&
+    typeof breakdown.skills === "number" &&
+    typeof breakdown.projects === "number" &&
+    typeof breakdown.experience === "number" &&
+    typeof breakdown.education === "number" &&
+    typeof breakdown.keywords === "number" &&
     isStringArray(analysis.skills) &&
     isStringArray(analysis.strengths) &&
     isStringArray(analysis.weaknesses) &&
@@ -259,6 +280,59 @@ function SkillChips({ skills }: { skills: string[] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
+  const breakdownItems = [
+    ["Contact", analysis.breakdown.contact, 10],
+    ["Skills", analysis.breakdown.skills, 20],
+    ["Projects", analysis.breakdown.projects, 25],
+    ["Experience", analysis.breakdown.experience, 25],
+    ["Education", analysis.breakdown.education, 10],
+    ["Keywords", analysis.breakdown.keywords, 15],
+  ] as const;
+
+  return (
+    <Card className="rounded-lg border bg-card shadow-sm">
+      <CardHeader className="pb-0">
+        <CardTitle className="flex items-center gap-2">
+          <ListChecks className="size-5 text-sky-500" aria-hidden="true" />
+          Score Breakdown
+        </CardTitle>
+        <CardDescription>Weighted ATS scoring signals.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {breakdownItems.map(([label, value, max]) => (
+          <div key={label} className="grid gap-1.5">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">{label}</span>
+              <span className="text-muted-foreground">
+                {value} / {max}
+              </span>
+            </div>
+            <Progress value={(value / max) * 100} className="h-2" />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyTabState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <Card className="rounded-lg border bg-card shadow-sm">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+    </Card>
   );
 }
 
@@ -512,230 +586,120 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <section className="grid gap-4 xl:grid-cols-[360px_1fr]">
-          <div className="grid gap-4">
-            <Card className={`rounded-lg border shadow-sm ${scoreTone.soft}`}>
-              <CardHeader className="pb-0">
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy
-                    className={`size-5 ${scoreTone.icon}`}
-                    aria-hidden="true"
-                  />
-                  ATS Score
-                </CardTitle>
-                <CardDescription className={scoreTone.text}>
-                  {scoreLabel}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-end gap-2">
-                    <span
-                      className={`text-6xl font-semibold tracking-normal ${scoreTone.text}`}
-                    >
-                      {score}
-                    </span>
-                    <span className="pb-2 text-lg font-medium text-muted-foreground">
-                      / 100
-                    </span>
-                  </div>
-                  <div
-                    className="grid size-24 shrink-0 place-items-center rounded-full"
-                    style={{
-                      background: `conic-gradient(${scoreTone.chart} ${score}%, var(--muted) 0)`,
-                    }}
-                    aria-label={`ATS score ${score} out of 100`}
-                  >
-                    <div className="size-16 rounded-full bg-card ring-1 ring-border" />
-                  </div>
-                </div>
-                <Progress
-                  value={score}
-                  className={`mt-4 h-2 bg-background/70 ${scoreTone.progress}`}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-lg border bg-card shadow-sm">
-              <CardHeader className="pb-0">
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb
-                    className="size-5 text-amber-500"
-                    aria-hidden="true"
-                  />
-                  Suggestions
-                </CardTitle>
-                <CardDescription>Highest-priority next edits.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResultList items={results.analysis.suggestions.slice(0, 4)} />
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="ats" className="gap-3">
+          <div className="overflow-x-auto pb-1">
+            <TabsList>
+              <TabsTrigger value="ats">ATS Analysis</TabsTrigger>
+              <TabsTrigger value="job-match">Job Match</TabsTrigger>
+              <TabsTrigger value="interview">Interview Prep</TabsTrigger>
+            </TabsList>
           </div>
 
-          <div className="grid gap-4">
-            <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-              <Card className="rounded-lg border bg-card shadow-sm">
-                <CardHeader className="pb-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles
-                      className="size-5 text-sky-500"
-                      aria-hidden="true"
-                    />
-                    AI Resume Summary
-                  </CardTitle>
-                  <CardDescription>
-                    Synthesized from the ATS analysis.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {resumeSummary}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-lg border bg-card shadow-sm">
-                <CardHeader className="pb-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <ListChecks
-                      className="size-5 text-sky-500"
-                      aria-hidden="true"
-                    />
-                    Skills
-                  </CardTitle>
-                  <CardDescription>
-                    {results.analysis.skills.length} detected keywords
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SkillChips skills={results.analysis.skills} />
-                </CardContent>
-              </Card>
-            </section>
-
-            <section className="grid gap-3 lg:grid-cols-2">
-              <CollapsibleInsight
-                title="Strengths"
-                description={`${results.analysis.strengths.length} positive signals`}
-                icon={BadgeCheck}
-                iconClassName="text-emerald-500"
-                items={results.analysis.strengths}
-              />
-              <CollapsibleInsight
-                title="Weaknesses"
-                description={`${results.analysis.weaknesses.length} gaps to review`}
-                icon={CircleAlert}
-                iconClassName="text-rose-500"
-                items={results.analysis.weaknesses}
-              />
-            </section>
-
-            <section className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-                <p className="text-2xl font-semibold">
-                  {results.analysis.skills.length}
-                </p>
-                <p className="text-sm text-muted-foreground">Skills found</p>
-              </div>
-              <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-                <p className="text-2xl font-semibold">
-                  {results.analysis.strengths.length}
-                </p>
-                <p className="text-sm text-muted-foreground">Strengths</p>
-              </div>
-              <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-                <p className="text-2xl font-semibold">
-                  {results.analysis.weaknesses.length}
-                </p>
-                <p className="text-sm text-muted-foreground">Weaknesses</p>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        {results.jobMatch && (
-          <section className="grid gap-4 rounded-lg border bg-background/60 p-4 shadow-sm">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-                  Job Match
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-normal">
-                  Job Description Matching
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Resume compared against the pasted job description.
-              </p>
-            </div>
-
-            <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
-              <Card className="rounded-lg border bg-card shadow-sm">
-                <CardHeader className="pb-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <SearchCheck
-                      className="size-5 text-sky-500"
-                      aria-hidden="true"
-                    />
-                    Match Score
-                  </CardTitle>
-                  <CardDescription>
-                    {getMatchLabel(results.jobMatch.matchScore)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-end gap-2">
-                    <span className="text-5xl font-semibold tracking-normal">
-                      {results.jobMatch.matchScore}
-                    </span>
-                    <span className="pb-1.5 text-base font-medium text-muted-foreground">
-                      / 100
-                    </span>
-                  </div>
-                  <Progress
-                    value={results.jobMatch.matchScore}
-                    className="mt-4 h-2 [&_[data-slot=progress-indicator]]:bg-sky-500"
-                  />
-                </CardContent>
-              </Card>
-
-              <div className="grid gap-4 lg:grid-cols-3">
-                <Card className="rounded-lg border bg-card shadow-sm">
+          <TabsContent value="ats" className="grid gap-4">
+            <section className="grid gap-4 xl:grid-cols-[360px_1fr]">
+              <div className="grid gap-4">
+                <Card className={`rounded-lg border shadow-sm ${scoreTone.soft}`}>
                   <CardHeader className="pb-0">
                     <CardTitle className="flex items-center gap-2">
-                      <ClipboardCheck
-                        className="size-5 text-emerald-500"
+                      <Trophy
+                        className={`size-5 ${scoreTone.icon}`}
                         aria-hidden="true"
                       />
-                      Matched Skills
+                      ATS Score
                     </CardTitle>
-                    <CardDescription>
-                      Skills aligned with the job.
+                    <CardDescription className={scoreTone.text}>
+                      {scoreLabel}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <SkillChips skills={results.jobMatch.matchedSkills} />
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-end gap-2">
+                        <span
+                          className={`text-6xl font-semibold tracking-normal ${scoreTone.text}`}
+                        >
+                          {score}
+                        </span>
+                        <span className="pb-2 text-lg font-medium text-muted-foreground">
+                          / 100
+                        </span>
+                      </div>
+                      <div
+                        className="grid size-24 shrink-0 place-items-center rounded-full"
+                        style={{
+                          background: `conic-gradient(${scoreTone.chart} ${score}%, var(--muted) 0)`,
+                        }}
+                        aria-label={`ATS score ${score} out of 100`}
+                      >
+                        <div className="size-16 rounded-full bg-card ring-1 ring-border" />
+                      </div>
+                    </div>
+                    <Progress
+                      value={score}
+                      className={`mt-4 h-2 bg-background/70 ${scoreTone.progress}`}
+                    />
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-lg border bg-card shadow-sm">
-                  <CardHeader className="pb-0">
-                    <CardTitle className="flex items-center gap-2">
-                      <CircleAlert
-                        className="size-5 text-rose-500"
-                        aria-hidden="true"
-                      />
-                      Missing Keywords
-                    </CardTitle>
-                    <CardDescription>
-                      Terms to consider adding truthfully.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SkillChips skills={results.jobMatch.missingKeywords} />
-                  </CardContent>
-                </Card>
+                <ScoreBreakdown analysis={results.analysis} />
+              </div>
+
+              <div className="grid gap-4">
+                <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+                  <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles
+                          className="size-5 text-sky-500"
+                          aria-hidden="true"
+                        />
+                        ATS Analysis
+                      </CardTitle>
+                      <CardDescription>
+                        Synthesized from the resume signals.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {resumeSummary}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <ListChecks
+                          className="size-5 text-sky-500"
+                          aria-hidden="true"
+                        />
+                        Skills
+                      </CardTitle>
+                      <CardDescription>
+                        {results.analysis.skills.length} detected keywords
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SkillChips skills={results.analysis.skills} />
+                    </CardContent>
+                  </Card>
+                </section>
+
+                <section className="grid gap-3 lg:grid-cols-2">
+                  <CollapsibleInsight
+                    title="Strengths"
+                    description={`${results.analysis.strengths.length} positive signals`}
+                    icon={BadgeCheck}
+                    iconClassName="text-emerald-500"
+                    items={results.analysis.strengths}
+                  />
+                  <CollapsibleInsight
+                    title="Weaknesses"
+                    description={`${results.analysis.weaknesses.length} gaps to review`}
+                    icon={CircleAlert}
+                    iconClassName="text-rose-500"
+                    items={results.analysis.weaknesses}
+                  />
+                </section>
 
                 <Card className="rounded-lg border bg-card shadow-sm">
                   <CardHeader className="pb-0">
@@ -744,69 +708,153 @@ export default function ResultsPage() {
                         className="size-5 text-amber-500"
                         aria-hidden="true"
                       />
-                      Recommendations
+                      Suggestions
                     </CardTitle>
-                    <CardDescription>
-                      Targeted job-match improvements.
-                    </CardDescription>
+                    <CardDescription>Highest-priority next edits.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResultList items={results.jobMatch.recommendations} />
+                    <ResultList items={results.analysis.suggestions} />
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          </TabsContent>
 
-        {results.interviewQuestions && (
-          <section className="grid gap-4 rounded-lg border bg-background/60 p-4 shadow-sm">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-                  Interview Questions
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-normal">
-                  Personalized Interview Prep
-                </h2>
+          <TabsContent value="job-match" className="grid gap-4">
+            {results.jobMatch ? (
+              <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
+                <Card className="rounded-lg border bg-card shadow-sm">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="flex items-center gap-2">
+                      <SearchCheck
+                        className="size-5 text-sky-500"
+                        aria-hidden="true"
+                      />
+                      Match Score
+                    </CardTitle>
+                    <CardDescription>
+                      {getMatchLabel(results.jobMatch.matchScore)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-end gap-2">
+                      <span className="text-5xl font-semibold tracking-normal">
+                        {results.jobMatch.matchScore}
+                      </span>
+                      <span className="pb-1.5 text-base font-medium text-muted-foreground">
+                        / 100
+                      </span>
+                    </div>
+                    <Progress
+                      value={results.jobMatch.matchScore}
+                      className="mt-4 h-2 [&_[data-slot=progress-indicator]]:bg-sky-500"
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <ClipboardCheck
+                          className="size-5 text-emerald-500"
+                          aria-hidden="true"
+                        />
+                        Matched Skills
+                      </CardTitle>
+                      <CardDescription>
+                        Skills aligned with the job.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SkillChips skills={results.jobMatch.matchedSkills} />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <CircleAlert
+                          className="size-5 text-rose-500"
+                          aria-hidden="true"
+                        />
+                        Missing Keywords
+                      </CardTitle>
+                      <CardDescription>
+                        Terms to consider adding truthfully.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SkillChips skills={results.jobMatch.missingKeywords} />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb
+                          className="size-5 text-amber-500"
+                          aria-hidden="true"
+                        />
+                        Recommendations
+                      </CardTitle>
+                      <CardDescription>
+                        Targeted job-match improvements.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResultList items={results.jobMatch.recommendations} />
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Questions generated from the resume
-                {results.jobMatch ? " and target job description." : "."}
-              </p>
-            </div>
+            ) : (
+              <EmptyTabState
+                title="No job match yet"
+                description="Paste a job description during upload to generate match score, matched skills, missing keywords, and recommendations."
+              />
+            )}
+          </TabsContent>
 
-            <div className="grid gap-3 lg:grid-cols-3">
-              <InterviewQuestionCard
-                title="Technical Questions"
-                description={`${results.interviewQuestions.technicalQuestions.length} technology-focused prompts`}
-                icon={Code2}
-                iconClassName="text-sky-500"
-                questions={results.interviewQuestions.technicalQuestions}
-                resumeText={results.resumeText}
-                jobDescription={results.jobDescription}
+          <TabsContent value="interview" className="grid gap-4">
+            {results.interviewQuestions ? (
+              <div className="grid gap-3 lg:grid-cols-3">
+                <InterviewQuestionCard
+                  title="Technical Questions"
+                  description={`${results.interviewQuestions.technicalQuestions.length} technology-focused prompts`}
+                  icon={Code2}
+                  iconClassName="text-sky-500"
+                  questions={results.interviewQuestions.technicalQuestions}
+                  resumeText={results.resumeText}
+                  jobDescription={results.jobDescription}
+                />
+                <InterviewQuestionCard
+                  title="Project Questions"
+                  description={`${results.interviewQuestions.projectQuestions.length} resume-project prompts`}
+                  icon={PanelsTopLeft}
+                  iconClassName="text-violet-500"
+                  questions={results.interviewQuestions.projectQuestions}
+                  resumeText={results.resumeText}
+                  jobDescription={results.jobDescription}
+                />
+                <InterviewQuestionCard
+                  title="Behavioral Questions"
+                  description={`${results.interviewQuestions.behavioralQuestions.length} experience-based prompts`}
+                  icon={MessageSquareText}
+                  iconClassName="text-emerald-500"
+                  questions={results.interviewQuestions.behavioralQuestions}
+                  resumeText={results.resumeText}
+                  jobDescription={results.jobDescription}
+                />
+              </div>
+            ) : (
+              <EmptyTabState
+                title="No interview prep yet"
+                description="Run a resume analysis to generate technical, project, and behavioral questions with AI-generated answers."
               />
-              <InterviewQuestionCard
-                title="Project Questions"
-                description={`${results.interviewQuestions.projectQuestions.length} resume-project prompts`}
-                icon={PanelsTopLeft}
-                iconClassName="text-violet-500"
-                questions={results.interviewQuestions.projectQuestions}
-                resumeText={results.resumeText}
-                jobDescription={results.jobDescription}
-              />
-              <InterviewQuestionCard
-                title="Behavioral Questions"
-                description={`${results.interviewQuestions.behavioralQuestions.length} experience-based prompts`}
-                icon={MessageSquareText}
-                iconClassName="text-emerald-500"
-                questions={results.interviewQuestions.behavioralQuestions}
-                resumeText={results.resumeText}
-                jobDescription={results.jobDescription}
-              />
-            </div>
-          </section>
-        )}
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </main>
   );
