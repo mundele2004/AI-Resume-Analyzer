@@ -7,8 +7,13 @@ import {
   BadgeCheck,
   ChevronDown,
   CircleAlert,
+  ClipboardCheck,
+  Code2,
   Lightbulb,
   ListChecks,
+  MessageSquareText,
+  PanelsTopLeft,
+  SearchCheck,
   Sparkles,
   Trophy,
 } from "lucide-react";
@@ -33,8 +38,23 @@ type AtsAnalysis = {
   suggestions: string[];
 };
 
+type JobMatchAnalysis = {
+  matchScore: number;
+  matchedSkills: string[];
+  missingKeywords: string[];
+  recommendations: string[];
+};
+
+type InterviewQuestionsAnalysis = {
+  technicalQuestions: string[];
+  projectQuestions: string[];
+  behavioralQuestions: string[];
+};
+
 type StoredResults = {
   analysis: AtsAnalysis;
+  jobMatch: JobMatchAnalysis | null;
+  interviewQuestions: InterviewQuestionsAnalysis | null;
   message: string | null;
   source: string | null;
 };
@@ -55,12 +75,45 @@ function isStoredResults(value: unknown): value is StoredResults {
     return false;
   }
 
-  return (
+  const validAnalysis =
     typeof analysis.atsScore === "number" &&
     isStringArray(analysis.skills) &&
     isStringArray(analysis.strengths) &&
     isStringArray(analysis.weaknesses) &&
-    isStringArray(analysis.suggestions)
+    isStringArray(analysis.suggestions);
+
+  if (!validAnalysis) {
+    return false;
+  }
+
+  if (candidate.jobMatch == null) {
+    return isValidInterviewQuestions(candidate.interviewQuestions);
+  }
+
+  const jobMatch = candidate.jobMatch as Partial<JobMatchAnalysis>;
+
+  const validJobMatch =
+    typeof jobMatch.matchScore === "number" &&
+    isStringArray(jobMatch.matchedSkills) &&
+    isStringArray(jobMatch.missingKeywords) &&
+    isStringArray(jobMatch.recommendations);
+
+  return (
+    validJobMatch && isValidInterviewQuestions(candidate.interviewQuestions)
+  );
+}
+
+function isValidInterviewQuestions(value: unknown) {
+  if (value == null) {
+    return true;
+  }
+
+  const interviewQuestions = value as Partial<InterviewQuestionsAnalysis>;
+
+  return (
+    isStringArray(interviewQuestions.technicalQuestions) &&
+    isStringArray(interviewQuestions.projectQuestions) &&
+    isStringArray(interviewQuestions.behavioralQuestions)
   );
 }
 
@@ -104,6 +157,18 @@ function getScoreTone(score: number) {
     soft: "bg-rose-500/10 border-rose-500/25",
     progress: "[&_[data-slot=progress-indicator]]:bg-rose-500",
   };
+}
+
+function getMatchLabel(score: number) {
+  if (score >= 85) {
+    return "Strong job match";
+  }
+
+  if (score >= 65) {
+    return "Partial job match";
+  }
+
+  return "Keyword gap detected";
 }
 
 function getResumeSummary(analysis: AtsAnalysis) {
@@ -216,6 +281,45 @@ function CollapsibleInsight({
         </summary>
         <div className="border-t px-3 pb-3 pt-3">
           <ResultList items={items} />
+        </div>
+      </details>
+    </Card>
+  );
+}
+
+function InterviewQuestionCard({
+  title,
+  description,
+  icon: Icon,
+  iconClassName,
+  questions,
+}: {
+  title: string;
+  description: string;
+  icon: typeof Code2;
+  iconClassName: string;
+  questions: string[];
+}) {
+  return (
+    <Card className="rounded-lg border bg-card shadow-sm" size="sm">
+      <details className="group">
+        <summary className="grid cursor-pointer grid-cols-[1fr_auto] gap-3 px-3 py-1 marker:content-['']">
+          <span>
+            <span className="flex items-center gap-2 font-medium">
+              <Icon className={`size-4 ${iconClassName}`} aria-hidden="true" />
+              {title}
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              {description}
+            </span>
+          </span>
+          <ChevronDown
+            className="mt-1 size-4 text-muted-foreground transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <div className="border-t px-3 pb-3 pt-3">
+          <ResultList items={questions} />
         </div>
       </details>
     </Card>
@@ -429,6 +533,154 @@ export default function ResultsPage() {
             </section>
           </div>
         </section>
+
+        {results.jobMatch && (
+          <section className="grid gap-4 rounded-lg border bg-background/60 p-4 shadow-sm">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+                  Job Match
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-normal">
+                  Job Description Matching
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Resume compared against the pasted job description.
+              </p>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
+              <Card className="rounded-lg border bg-card shadow-sm">
+                <CardHeader className="pb-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <SearchCheck
+                      className="size-5 text-sky-500"
+                      aria-hidden="true"
+                    />
+                    Match Score
+                  </CardTitle>
+                  <CardDescription>
+                    {getMatchLabel(results.jobMatch.matchScore)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-end gap-2">
+                    <span className="text-5xl font-semibold tracking-normal">
+                      {results.jobMatch.matchScore}
+                    </span>
+                    <span className="pb-1.5 text-base font-medium text-muted-foreground">
+                      / 100
+                    </span>
+                  </div>
+                  <Progress
+                    value={results.jobMatch.matchScore}
+                    className="mt-4 h-2 [&_[data-slot=progress-indicator]]:bg-sky-500"
+                  />
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <Card className="rounded-lg border bg-card shadow-sm">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="flex items-center gap-2">
+                      <ClipboardCheck
+                        className="size-5 text-emerald-500"
+                        aria-hidden="true"
+                      />
+                      Matched Skills
+                    </CardTitle>
+                    <CardDescription>
+                      Skills aligned with the job.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SkillChips skills={results.jobMatch.matchedSkills} />
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-lg border bg-card shadow-sm">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="flex items-center gap-2">
+                      <CircleAlert
+                        className="size-5 text-rose-500"
+                        aria-hidden="true"
+                      />
+                      Missing Keywords
+                    </CardTitle>
+                    <CardDescription>
+                      Terms to consider adding truthfully.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SkillChips skills={results.jobMatch.missingKeywords} />
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-lg border bg-card shadow-sm">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="flex items-center gap-2">
+                      <Lightbulb
+                        className="size-5 text-amber-500"
+                        aria-hidden="true"
+                      />
+                      Recommendations
+                    </CardTitle>
+                    <CardDescription>
+                      Targeted job-match improvements.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResultList items={results.jobMatch.recommendations} />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {results.interviewQuestions && (
+          <section className="grid gap-4 rounded-lg border bg-background/60 p-4 shadow-sm">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+                  Interview Questions
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-normal">
+                  Personalized Interview Prep
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Questions generated from the resume
+                {results.jobMatch ? " and target job description." : "."}
+              </p>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <InterviewQuestionCard
+                title="Technical Questions"
+                description={`${results.interviewQuestions.technicalQuestions.length} technology-focused prompts`}
+                icon={Code2}
+                iconClassName="text-sky-500"
+                questions={results.interviewQuestions.technicalQuestions}
+              />
+              <InterviewQuestionCard
+                title="Project Questions"
+                description={`${results.interviewQuestions.projectQuestions.length} resume-project prompts`}
+                icon={PanelsTopLeft}
+                iconClassName="text-violet-500"
+                questions={results.interviewQuestions.projectQuestions}
+              />
+              <InterviewQuestionCard
+                title="Behavioral Questions"
+                description={`${results.interviewQuestions.behavioralQuestions.length} experience-based prompts`}
+                icon={MessageSquareText}
+                iconClassName="text-emerald-500"
+                questions={results.interviewQuestions.behavioralQuestions}
+              />
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

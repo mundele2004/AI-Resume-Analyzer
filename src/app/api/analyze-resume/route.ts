@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import {
+  analyzeInterviewQuestions,
+  analyzeResumeJobMatch,
   analyzeResumeWithGroq,
   generateLocalAtsAnalysis,
   shouldUseLocalAtsFallback,
@@ -19,20 +21,34 @@ function errorResponse(message: string, status: number) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { text?: unknown };
+  const body = (await request.json()) as {
+    text?: unknown;
+    jobDescription?: unknown;
+  };
 
   if (typeof body.text !== "string" || !body.text.trim()) {
     return errorResponse("Resume text is required.", 400);
   }
 
   const resumeText = body.text.trim();
+  const jobDescription =
+    typeof body.jobDescription === "string" ? body.jobDescription.trim() : "";
 
   try {
     const analysis = await analyzeResumeWithGroq(resumeText);
+    const jobMatch = jobDescription
+      ? await analyzeResumeJobMatch(resumeText, jobDescription)
+      : null;
+    const interviewQuestions = await analyzeInterviewQuestions(
+      resumeText,
+      jobDescription
+    );
 
     return NextResponse.json({
       success: true,
       analysis,
+      jobMatch,
+      interviewQuestions,
       source: "groq",
     });
   } catch (error) {

@@ -19,12 +19,32 @@ type AtsAnalysis = {
   suggestions: string[];
 };
 
+type JobMatchAnalysis = {
+  matchScore: number;
+  matchedSkills: string[];
+  missingKeywords: string[];
+  recommendations: string[];
+};
+
+type InterviewQuestionsAnalysis = {
+  technicalQuestions: string[];
+  projectQuestions: string[];
+  behavioralQuestions: string[];
+};
+
 type ParseResumeResponse =
   | { success: true; text: string }
   | { success: false; error?: string };
 
 type AnalyzeResumeResponse =
-  | { success: true; analysis: AtsAnalysis; message?: string; source?: string }
+  | {
+      success: true;
+      analysis: AtsAnalysis;
+      jobMatch?: JobMatchAnalysis | null;
+      interviewQuestions?: InterviewQuestionsAnalysis;
+      message?: string;
+      source?: string;
+    }
   | { success: false; error?: string };
 
 function formatFileSize(bytes: number) {
@@ -54,6 +74,7 @@ function getValidationMessage(rejection: FileRejection) {
 export function ResumeUpload({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [jobDescription, setJobDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -86,7 +107,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
       multiple: false,
     });
 
-  const hasSelectedFile = Boolean(selectedFile);
+  const canAnalyze = Boolean(selectedFile);
 
   async function handleAnalyzeResume() {
     if (!selectedFile || isAnalyzing) {
@@ -118,7 +139,10 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text: result.text }),
+        body: JSON.stringify({
+          text: result.text,
+          jobDescription: jobDescription.trim(),
+        }),
       });
       const analysisResult =
         (await analysisResponse.json()) as AnalyzeResumeResponse;
@@ -134,6 +158,8 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
         RESULTS_STORAGE_KEY,
         JSON.stringify({
           analysis: analysisResult.analysis,
+          jobMatch: analysisResult.jobMatch ?? null,
+          interviewQuestions: analysisResult.interviewQuestions ?? null,
           message: analysisResult.message ?? null,
           source: analysisResult.source ?? null,
         })
@@ -166,7 +192,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
 
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <Button
-            disabled={!hasSelectedFile || isAnalyzing}
+            disabled={!canAnalyze || isAnalyzing}
             onClick={handleAnalyzeResume}
             className="h-12 px-6 text-base shadow-lg shadow-blue-950/10 transition-transform hover:-translate-y-0.5"
           >
@@ -187,67 +213,81 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
         aria-label="Resume upload"
         className="animate-reveal rounded-xl border bg-card/85 p-4 shadow-2xl shadow-blue-950/10 backdrop-blur"
       >
-        <div
-          {...getRootProps()}
-          className={cn(
-            "group flex min-h-[380px] cursor-pointer flex-col items-center justify-center gap-6 rounded-lg border-2 border-dashed border-border bg-muted/35 px-6 py-10 text-center transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/70 hover:bg-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10",
-            isDragActive && "border-blue-500/80 bg-blue-500/10 shadow-xl",
-            isDragReject && "border-destructive/80 bg-destructive/10",
-            selectedFile && "border-emerald-500/70 bg-emerald-500/5"
-          )}
-        >
-          <input {...getInputProps()} aria-label="Upload PDF resume" />
+        <div className="grid gap-4">
+          <div
+            {...getRootProps()}
+            className={cn(
+              "group flex min-h-[260px] cursor-pointer flex-col items-center justify-center gap-5 rounded-lg border-2 border-dashed border-border bg-muted/35 px-6 py-8 text-center transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/70 hover:bg-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10",
+              isDragActive && "border-blue-500/80 bg-blue-500/10 shadow-xl",
+              isDragReject && "border-destructive/80 bg-destructive/10",
+              selectedFile && "border-emerald-500/70 bg-emerald-500/5"
+            )}
+          >
+            <input {...getInputProps()} aria-label="Upload PDF resume" />
 
-          {selectedFile ? (
-            <>
-              <span className="flex size-20 items-center justify-center rounded-xl bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/20 transition-transform duration-300 group-hover:scale-105">
-                <CheckCircle2
-                  className="size-10 text-emerald-600 dark:text-emerald-400"
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="space-y-3">
-                <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
-                  {statusMessage}
-                </span>
-                <span className="flex max-w-full items-center justify-center gap-2 text-xl font-semibold tracking-normal">
-                  <FileText
-                    className="size-5 shrink-0 text-sky-600 dark:text-sky-400"
+            {selectedFile ? (
+              <>
+                <span className="flex size-16 items-center justify-center rounded-xl bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/20 transition-transform duration-300 group-hover:scale-105">
+                  <CheckCircle2
+                    className="size-8 text-emerald-600 dark:text-emerald-400"
                     aria-hidden="true"
                   />
-                  <span className="min-w-0 break-all">
-                    {selectedFile.name}
+                </span>
+                <span className="space-y-2">
+                  <span className="block text-sm font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                    {statusMessage}
+                  </span>
+                  <span className="flex max-w-full items-center justify-center gap-2 text-lg font-semibold tracking-normal">
+                    <FileText
+                      className="size-5 shrink-0 text-sky-600 dark:text-sky-400"
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0 break-all">
+                      {selectedFile.name}
+                    </span>
+                  </span>
+                  <span className="block text-sm font-medium text-muted-foreground">
+                    {formatFileSize(selectedFile.size)}
                   </span>
                 </span>
-                <span className="block text-sm font-medium text-muted-foreground">
-                  {formatFileSize(selectedFile.size)}
+                <span className="rounded-lg bg-background px-3 py-1 text-sm font-medium text-muted-foreground ring-1 ring-border">
+                  Click or drop another PDF to replace it
                 </span>
-              </span>
-              <span className="rounded-lg bg-background px-3 py-1 text-sm font-medium text-muted-foreground ring-1 ring-border">
-                Click or drop another PDF to replace it
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="flex size-20 items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border transition-transform duration-300 group-hover:scale-105">
-                <UploadCloud
-                  className="size-10 text-sky-600 dark:text-sky-400"
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="space-y-2">
-                <span className="block text-xl font-semibold tracking-normal">
-                  Drop your resume here or click to browse
+              </>
+            ) : (
+              <>
+                <span className="flex size-16 items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border transition-transform duration-300 group-hover:scale-105">
+                  <UploadCloud
+                    className="size-8 text-sky-600 dark:text-sky-400"
+                    aria-hidden="true"
+                  />
                 </span>
-                <span className="block text-sm font-medium text-muted-foreground">
-                  {statusMessage}
+                <span className="space-y-2">
+                  <span className="block text-lg font-semibold tracking-normal">
+                    Drop your resume here or click to browse
+                  </span>
+                  <span className="block text-sm font-medium text-muted-foreground">
+                    {statusMessage}
+                  </span>
                 </span>
-              </span>
-              <span className="rounded-lg bg-background px-3 py-1 text-sm font-medium text-muted-foreground ring-1 ring-border">
-                Max file size: 5MB
-              </span>
-            </>
-          )}
+                <span className="rounded-lg bg-background px-3 py-1 text-sm font-medium text-muted-foreground ring-1 ring-border">
+                  Max file size: 5MB
+                </span>
+              </>
+            )}
+          </div>
+
+          <label className="grid gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              Job description optional
+            </span>
+            <textarea
+              value={jobDescription}
+              onChange={(event) => setJobDescription(event.target.value)}
+              placeholder="Paste the target job description here..."
+              className="min-h-36 resize-y rounded-lg border bg-background px-3 py-2 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-ring focus:ring-3 focus:ring-ring/30"
+            />
+          </label>
         </div>
 
         {errors.length > 0 && (
@@ -263,7 +303,6 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
             ))}
           </div>
         )}
-
       </section>
     </div>
   );
