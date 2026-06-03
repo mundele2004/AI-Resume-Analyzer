@@ -160,6 +160,8 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
           analysis: analysisResult.analysis,
           jobMatch: analysisResult.jobMatch ?? null,
           interviewQuestions: analysisResult.interviewQuestions ?? null,
+          resumeText: result.text,
+          jobDescription: jobDescription.trim(),
           message: analysisResult.message ?? null,
           source: analysisResult.source ?? null,
         })

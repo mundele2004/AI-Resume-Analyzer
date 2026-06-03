@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -55,9 +55,15 @@ type StoredResults = {
   analysis: AtsAnalysis;
   jobMatch: JobMatchAnalysis | null;
   interviewQuestions: InterviewQuestionsAnalysis | null;
+  resumeText: string;
+  jobDescription: string;
   message: string | null;
   source: string | null;
 };
+
+type InterviewAnswerResponse =
+  | { success: true; answer: string }
+  | { success: false; error?: string };
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -83,6 +89,14 @@ function isStoredResults(value: unknown): value is StoredResults {
     isStringArray(analysis.suggestions);
 
   if (!validAnalysis) {
+    return false;
+  }
+
+  if (typeof candidate.resumeText !== "string") {
+    return false;
+  }
+
+  if (typeof candidate.jobDescription !== "string") {
     return false;
   }
 
@@ -293,13 +307,70 @@ function InterviewQuestionCard({
   icon: Icon,
   iconClassName,
   questions,
+  resumeText,
+  jobDescription,
 }: {
   title: string;
   description: string;
   icon: typeof Code2;
   iconClassName: string;
   questions: string[];
+  resumeText: string;
+  jobDescription: string;
 }) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loadingQuestion, setLoadingQuestion] = useState<string | null>(null);
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
+
+  async function handleGenerateAnswer(question: string) {
+    if (answers[question] || loadingQuestion) {
+      return;
+    }
+
+    setLoadingQuestion(question);
+    setAnswerErrors((current) => {
+      const next = { ...current };
+      delete next[question];
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/interview-answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question,
+          resumeText,
+          jobDescription,
+        }),
+      });
+      const result = (await response.json()) as InterviewAnswerResponse;
+
+      if (!result.success) {
+        setAnswerErrors((current) => ({
+          ...current,
+          [question]: result.error ?? "Unable to generate an answer.",
+        }));
+        return;
+      }
+
+      setAnswers((current) => ({
+        ...current,
+        [question]: result.answer,
+      }));
+    } catch (error) {
+      console.error("Interview answer generation failed:", error);
+      setAnswerErrors((current) => ({
+        ...current,
+        [question]: "Unable to generate an answer. Please try again.",
+      }));
+    } finally {
+      setLoadingQuestion(null);
+    }
+  }
+
   return (
     <Card className="rounded-lg border bg-card shadow-sm" size="sm">
       <details className="group">
@@ -319,7 +390,56 @@ function InterviewQuestionCard({
           />
         </summary>
         <div className="border-t px-3 pb-3 pt-3">
-          <ResultList items={questions} />
+          <ul className="space-y-3">
+            {questions.length > 0 ? (
+              questions.map((question) => (
+                <li
+                  key={question}
+                  className="rounded-lg border bg-background p-3"
+                >
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {question}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={loadingQuestion === question}
+                      onClick={() => handleGenerateAnswer(question)}
+                    >
+                      {answers[question]
+                        ? "Answer Generated"
+                        : loadingQuestion === question
+                          ? "Generating..."
+                          : "Generate Answer"}
+                    </Button>
+                    {answerErrors[question] && (
+                      <span className="text-xs font-medium text-destructive">
+                        {answerErrors[question]}
+                      </span>
+                    )}
+                  </div>
+
+                  {answers[question] && (
+                    <details className="mt-3 rounded-lg border bg-card">
+                      <summary className="cursor-pointer px-3 py-2 text-sm font-medium marker:content-['']">
+                        View Answer
+                      </summary>
+                      <div className="border-t px-3 py-3">
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                          {answers[question]}
+                        </p>
+                      </div>
+                    </details>
+                  )}
+                </li>
+              ))
+            ) : (
+              <li className="text-sm text-muted-foreground">
+                No questions returned.
+              </li>
+            )}
+          </ul>
         </div>
       </details>
     </Card>
@@ -663,6 +783,8 @@ export default function ResultsPage() {
                 icon={Code2}
                 iconClassName="text-sky-500"
                 questions={results.interviewQuestions.technicalQuestions}
+                resumeText={results.resumeText}
+                jobDescription={results.jobDescription}
               />
               <InterviewQuestionCard
                 title="Project Questions"
@@ -670,6 +792,8 @@ export default function ResultsPage() {
                 icon={PanelsTopLeft}
                 iconClassName="text-violet-500"
                 questions={results.interviewQuestions.projectQuestions}
+                resumeText={results.resumeText}
+                jobDescription={results.jobDescription}
               />
               <InterviewQuestionCard
                 title="Behavioral Questions"
@@ -677,6 +801,8 @@ export default function ResultsPage() {
                 icon={MessageSquareText}
                 iconClassName="text-emerald-500"
                 questions={results.interviewQuestions.behavioralQuestions}
+                resumeText={results.resumeText}
+                jobDescription={results.jobDescription}
               />
             </div>
           </section>

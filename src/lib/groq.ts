@@ -21,6 +21,10 @@ export type InterviewQuestionsAnalysis = {
   behavioralQuestions: string[];
 };
 
+export type InterviewAnswer = {
+  answer: string;
+};
+
 const MODEL_NAME = "llama-3.3-70b-versatile";
 const GROQ_FALLBACK_STATUSES = new Set([429, 500, 503]);
 
@@ -30,6 +34,8 @@ const JOB_MATCH_SYSTEM_PROMPT =
   "You are an ATS job description matching evaluator.\nCompare the resume to the job description and return valid JSON only.";
 const INTERVIEW_QUESTIONS_SYSTEM_PROMPT =
   "You are an interview preparation coach.\nGenerate personalized interview questions and return valid JSON only.";
+const INTERVIEW_ANSWER_SYSTEM_PROMPT =
+  "You are an interview preparation coach.\nGenerate an ideal interview answer and return valid JSON only.";
 const JOB_MATCH_SCORING_GUIDE = `Score calibration:
 - 85-95: Strong match. Most required skills, technologies, relevant projects, experience, and education signals are present.
 - 70-84: Good match. Several important requirements match, with some missing keywords or secondary gaps.
@@ -138,6 +144,22 @@ function validateInterviewQuestionsAnalysis(
     technicalQuestions: analysis.technicalQuestions,
     projectQuestions: analysis.projectQuestions,
     behavioralQuestions: analysis.behavioralQuestions,
+  };
+}
+
+function validateInterviewAnswer(value: unknown): InterviewAnswer {
+  if (!value || typeof value !== "object") {
+    throw new Error("Groq interview answer response was not a JSON object.");
+  }
+
+  const analysis = value as Partial<InterviewAnswer>;
+
+  if (typeof analysis.answer !== "string" || !analysis.answer.trim()) {
+    throw new Error("Groq interview answer response included an invalid answer.");
+  }
+
+  return {
+    answer: analysis.answer.trim(),
   };
 }
 
@@ -457,4 +479,70 @@ ${targetRoleContext}`,
   const parsed = extractJsonObject(responseText);
 
   return validateInterviewQuestionsAnalysis(parsed);
+}
+
+export async function generateInterviewAnswer({
+  question,
+  resumeText,
+  jobDescription,
+}: {
+  question: string;
+  resumeText: string;
+  jobDescription?: string;
+}): Promise<InterviewAnswer> {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey || apiKey === "YOUR_API_KEY") {
+    throw new Error("GROQ_API_KEY is not configured.");
+  }
+
+  const targetRoleContext = jobDescription?.trim()
+    ? `Use this target job description when tailoring the answer:
+${jobDescription.trim()}`
+    : "No job description was provided. Use only the resume context.";
+
+  const client = new Groq({ apiKey });
+  const completion = await client.chat.completions.create({
+    model: MODEL_NAME,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: INTERVIEW_ANSWER_SYSTEM_PROMPT,
+      },
+      {
+        role: "user",
+        content: `Generate a realistic 2-3 minute interview answer for this question.
+Use candidate resume context, project details, technologies, experience, and education.
+If a job description is provided, tailor the answer to the target role.
+Keep the answer professional, concise, specific, and first-person.
+Do not invent impossible details. If specifics are missing, frame the answer generally while still using available resume context.
+
+Return JSON matching this schema:
+
+{
+"answer": string
+}
+
+Interview question:
+${question}
+
+Resume text:
+${resumeText}
+
+${targetRoleContext}`,
+      },
+    ],
+  });
+
+  const responseText = completion.choices[0]?.message?.content;
+
+  if (!responseText) {
+    throw new Error("Groq interview answer response did not include content.");
+  }
+
+  const parsed = extractJsonObject(responseText);
+
+  return validateInterviewAnswer(parsed);
 }
