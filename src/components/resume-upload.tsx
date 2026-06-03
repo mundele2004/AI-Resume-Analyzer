@@ -13,6 +13,14 @@ const RESULTS_STORAGE_KEY = "ats-analysis-result";
 
 type AtsAnalysis = {
   atsScore: number;
+  breakdown: {
+    contact: number;
+    skills: number;
+    projects: number;
+    experience: number;
+    education: number;
+    keywords: number;
+  };
   skills: string[];
   strengths: string[];
   weaknesses: string[];

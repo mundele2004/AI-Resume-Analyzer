@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { calculateAtsScore } from "@/lib/ats-score";
 import {
   analyzeInterviewQuestions,
   analyzeResumeJobMatch,
@@ -35,7 +36,12 @@ export async function POST(request: Request) {
     typeof body.jobDescription === "string" ? body.jobDescription.trim() : "";
 
   try {
-    const analysis = await analyzeResumeWithGroq(resumeText);
+    const atsScore = calculateAtsScore(resumeText);
+    const atsInsights = await analyzeResumeWithGroq(resumeText);
+    const analysis = {
+      ...atsScore,
+      ...atsInsights,
+    };
     const jobMatch = jobDescription
       ? await analyzeResumeJobMatch(resumeText, jobDescription)
       : null;

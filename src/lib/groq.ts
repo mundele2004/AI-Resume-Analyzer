@@ -1,12 +1,17 @@
 import Groq from "groq-sdk";
 
+import { calculateAtsScore, type AtsScoreBreakdown } from "@/lib/ats-score";
+
 export type AtsAnalysis = {
   atsScore: number;
+  breakdown: AtsScoreBreakdown;
   skills: string[];
   strengths: string[];
   weaknesses: string[];
   suggestions: string[];
 };
+
+export type AtsInsights = Omit<AtsAnalysis, "atsScore" | "breakdown">;
 
 export type JobMatchAnalysis = {
   matchScore: number;
@@ -55,21 +60,12 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function validateAnalysis(value: unknown): AtsAnalysis {
+function validateAnalysis(value: unknown): AtsInsights {
   if (!value || typeof value !== "object") {
     throw new Error("Groq response was not a JSON object.");
   }
 
-  const analysis = value as Partial<AtsAnalysis>;
-
-  if (
-    typeof analysis.atsScore !== "number" ||
-    !Number.isFinite(analysis.atsScore) ||
-    analysis.atsScore < 0 ||
-    analysis.atsScore > 100
-  ) {
-    throw new Error("Groq response included an invalid ATS score.");
-  }
+  const analysis = value as Partial<AtsInsights>;
 
   if (
     !isStringArray(analysis.skills) ||
@@ -81,7 +77,6 @@ function validateAnalysis(value: unknown): AtsAnalysis {
   }
 
   return {
-    atsScore: Math.round(analysis.atsScore),
     skills: analysis.skills,
     strengths: analysis.strengths,
     weaknesses: analysis.weaknesses,
@@ -269,10 +264,7 @@ export function generateLocalAtsAnalysis(resumeText: string): AtsAnalysis {
     },
   ];
 
-  const atsScore = checks.reduce(
-    (score, check) => score + (check.present ? check.points : 0),
-    0
-  );
+  const score = calculateAtsScore(resumeText);
   const strengths = checks
     .filter((check) => check.present)
     .map((check) => `${check.label} is present.`);
@@ -285,7 +277,8 @@ export function generateLocalAtsAnalysis(resumeText: string): AtsAnalysis {
   const skills = extractSkills(resumeText);
 
   return {
-    atsScore,
+    atsScore: score.atsScore,
+    breakdown: score.breakdown,
     skills:
       skills.length > 0 ? skills : ["No common technical skills detected"],
     strengths:
@@ -320,7 +313,7 @@ export function shouldUseLocalAtsFallback(error: unknown) {
 
 export async function analyzeResumeWithGroq(
   resumeText: string
-): Promise<AtsAnalysis> {
+): Promise<AtsInsights> {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey || apiKey === "YOUR_API_KEY") {
@@ -342,12 +335,13 @@ export async function analyzeResumeWithGroq(
         content: `Return JSON matching this schema:
 
 {
-"atsScore": number,
 "skills": string[],
 "strengths": string[],
 "weaknesses": string[],
 "suggestions": string[]
 }
+
+Do not include atsScore or scoring fields. The ATS score is calculated separately.
 
 Resume text:
 ${resumeText}`,
