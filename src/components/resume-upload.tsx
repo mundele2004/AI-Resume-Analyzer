@@ -2,15 +2,29 @@
 
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { CheckCircle2, FileText, UploadCloud, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useDropzone, type FileRejection } from "react-dropzone";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const RESULTS_STORAGE_KEY = "ats-analysis-result";
+
+type AtsAnalysis = {
+  atsScore: number;
+  skills: string[];
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+};
 
 type ParseResumeResponse =
   | { success: true; text: string }
+  | { success: false; error?: string };
+
+type AnalyzeResumeResponse =
+  | { success: true; analysis: AtsAnalysis; message?: string; source?: string }
   | { success: false; error?: string };
 
 function formatFileSize(bytes: number) {
@@ -38,6 +52,7 @@ function getValidationMessage(rejection: FileRejection) {
 }
 
 export function ResumeUpload({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -97,6 +112,33 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
       }
 
       console.log("Extracted resume text:", result.text);
+
+      const analysisResponse = await fetch("/api/analyze-resume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: result.text }),
+      });
+      const analysisResult =
+        (await analysisResponse.json()) as AnalyzeResumeResponse;
+
+      if (!analysisResult.success) {
+        setErrors([
+          analysisResult.error ?? "Unable to analyze this resume with AI.",
+        ]);
+        return;
+      }
+
+      sessionStorage.setItem(
+        RESULTS_STORAGE_KEY,
+        JSON.stringify({
+          analysis: analysisResult.analysis,
+          message: analysisResult.message ?? null,
+          source: analysisResult.source ?? null,
+        })
+      );
+      router.push("/results");
     } catch (error) {
       console.error("Resume analysis failed:", error);
       setErrors(["Unable to analyze this resume. Please try again."]);
@@ -129,7 +171,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
             className="h-12 px-6 text-base shadow-lg shadow-blue-950/10 transition-transform hover:-translate-y-0.5"
           >
             <UploadCloud className="size-5" aria-hidden="true" />
-            {isAnalyzing ? "Analyzing..." : "Analyze Resume"}
+            {isAnalyzing ? "Analyzing Resume..." : "Analyze Resume"}
           </Button>
           <Button
             variant="outline"
@@ -221,6 +263,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
             ))}
           </div>
         )}
+
       </section>
     </div>
   );

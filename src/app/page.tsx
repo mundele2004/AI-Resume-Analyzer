@@ -1,62 +1,10 @@
 import {
   Brain,
-  BriefcaseBusiness,
-  ClipboardCheck,
-  FileSearch,
-  MessageSquareText,
   Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ResumeUpload } from "@/components/resume-upload";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-const features = [
-  {
-    title: "ATS Score Analysis",
-    description:
-      "See how your resume performs against applicant tracking systems with a clear, recruiter-ready score.",
-    icon: ClipboardCheck,
-    tone: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    title: "Resume Feedback",
-    description:
-      "Get targeted suggestions for stronger bullet points, cleaner structure, and sharper professional impact.",
-    icon: FileSearch,
-    tone: "text-sky-600 dark:text-sky-400",
-    bg: "bg-sky-500/10",
-  },
-  {
-    title: "Job Description Matching",
-    description:
-      "Compare your resume to job posts and uncover missing keywords, skills, and experience signals.",
-    icon: BriefcaseBusiness,
-    tone: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10",
-  },
-  {
-    title: "Interview Question Generator",
-    description:
-      "Prepare with role-specific questions based on your resume, experience, and target position.",
-    icon: MessageSquareText,
-    tone: "text-rose-600 dark:text-rose-400",
-    bg: "bg-rose-500/10",
-  },
-];
-
-const stats = [
-  ["10,000+", "Resumes Analyzed"],
-  ["95%", "ATS Accuracy"],
-  ["500+", "Hiring Managers Inspired"],
-];
 
 export default function Home() {
   return (
@@ -86,12 +34,6 @@ export default function Home() {
             <div className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
               <a href="#upload" className="transition-colors hover:text-foreground">
                 Upload
-              </a>
-              <a href="#stats" className="transition-colors hover:text-foreground">
-                Results
-              </a>
-              <a href="#features" className="transition-colors hover:text-foreground">
-                Features
               </a>
             </div>
             <Button variant="outline" className="hidden sm:inline-flex">
@@ -124,75 +66,6 @@ export default function Home() {
               </p>
             </div>
           </ResumeUpload>
-        </div>
-      </section>
-
-      <section id="stats" className="border-y bg-background">
-        <div className="mx-auto grid w-full max-w-7xl gap-4 px-6 py-8 sm:grid-cols-3 sm:px-8 lg:px-12">
-          {stats.map(([value, label]) => (
-            <div
-              key={label}
-              className="animate-reveal rounded-lg border bg-card px-5 py-6 text-center shadow-sm"
-            >
-              <p className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-                {value}
-              </p>
-              <p className="mt-2 text-sm font-medium text-muted-foreground">
-                {label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="features" className="relative border-t bg-muted/30">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-500/8 to-transparent"
-          aria-hidden="true"
-        />
-        <div className="mx-auto w-full max-w-7xl px-6 py-16 sm:px-8 lg:px-12">
-          <div className="animate-reveal mb-8 max-w-2xl space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-              Recruiter-ready insights
-            </p>
-            <h2 className="text-3xl font-semibold leading-tight tracking-normal sm:text-4xl">
-              Everything you need to tailor your next application
-            </h2>
-            <p className="text-base leading-7 text-muted-foreground">
-              Practical AI insights for resumes, job descriptions, and
-              interview prep in one focused workspace.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-
-              return (
-                <Card
-                  key={feature.title}
-                  className="animate-reveal rounded-lg border bg-card/90 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-blue-500/40 hover:shadow-2xl hover:shadow-blue-950/10 dark:hover:shadow-blue-500/10"
-                >
-                  <CardHeader className="gap-4">
-                    <span
-                      className={`flex size-11 items-center justify-center rounded-lg ${feature.bg} transition-transform duration-300 group-hover/card:scale-110`}
-                    >
-                      <Icon
-                        className={`size-5 ${feature.tone}`}
-                        aria-hidden="true"
-                      />
-                    </span>
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="leading-6">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
         </div>
       </section>
     </main>
