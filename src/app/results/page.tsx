@@ -16,6 +16,7 @@ import {
   SearchCheck,
   Sparkles,
   Trophy,
+  Download,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { generateResumeReportPdf } from "@/lib/pdf-report";
 
 const RESULTS_STORAGE_KEY = "ats-analysis-result";
 
@@ -521,6 +523,7 @@ function InterviewQuestionCard({
 }
 
 export default function ResultsPage() {
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const storedResults = useSyncExternalStore(
     subscribeToStoredResults,
     getStoredResultsSnapshot,
@@ -534,6 +537,20 @@ export default function ResultsPage() {
     () => (results ? getResumeSummary(results.analysis) : ""),
     [results]
   );
+
+  async function handleDownloadReport() {
+    if (!results || isDownloadingReport) {
+      return;
+    }
+
+    setIsDownloadingReport(true);
+
+    try {
+      await Promise.resolve(generateResumeReportPdf(results));
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  }
 
   if (!results) {
     return (
@@ -572,12 +589,23 @@ export default function ResultsPage() {
               Resume Analysis Results
             </h1>
           </div>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/">
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              Analyze another resume
-            </Link>
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              disabled={isDownloadingReport}
+              onClick={handleDownloadReport}
+            >
+              <Download className="size-4" aria-hidden="true" />
+              {isDownloadingReport ? "Generating PDF..." : "Download Report"}
+            </Button>
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href="/">
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                Analyze another resume
+              </Link>
+            </Button>
+          </div>
         </header>
 
         {results?.message && (
