@@ -442,6 +442,8 @@ function SkillChips({ skills }: { skills: string[] }) {
     (skill) => !categorizedSkills.has(skill.toLowerCase())
   );
 
+  const visibleLimit = 5;
+
   return (
     <div className="grid gap-3">
       {categorized.map((category) => (
@@ -450,14 +452,19 @@ function SkillChips({ skills }: { skills: string[] }) {
             {category.title}
           </p>
           <div className="flex flex-wrap gap-2">
-            {category.skills.map((skill) => (
+            {category.skills.slice(0, visibleLimit).map((skill) => (
               <span
                 key={`${category.title}-${skill}`}
-                className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 ${category.className}`}
+                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm transition-all duration-200 hover:scale-[1.01] ${category.className}`}
               >
                 {skill}
               </span>
             ))}
+            {category.skills.length > visibleLimit && (
+              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+                +{category.skills.length - visibleLimit} more
+              </span>
+            )}
           </div>
         </div>
       ))}
@@ -468,14 +475,19 @@ function SkillChips({ skills }: { skills: string[] }) {
             Other
           </p>
           <div className="flex flex-wrap gap-2">
-            {uncategorized.map((skill) => (
+            {uncategorized.slice(0, 8).map((skill) => (
               <span
                 key={skill}
-                className="inline-flex items-center rounded-lg border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
               >
                 {skill}
               </span>
             ))}
+            {uncategorized.length > 8 && (
+              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+                +{uncategorized.length - 8} more
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -498,7 +510,7 @@ function WarningChips({ skills }: { skills: string[] }) {
       {skills.map((skill) => (
         <span
           key={skill}
-          className="inline-flex items-center rounded-lg border border-amber-300/70 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          className="inline-flex items-center rounded-md border border-amber-300/70 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
         >
           {skill}
         </span>
@@ -526,23 +538,23 @@ function ResumeVerdictCard({ analysis }: { analysis: AtsAnalysis }) {
   const verdict = getResumeVerdict(analysis);
 
   return (
-    <Card className="rounded-2xl border border-blue-200/80 bg-blue-50/80 shadow-sm transition-all duration-300 hover:shadow-xl">
+    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
       <CardHeader className="pb-0">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="size-5 text-sky-500" aria-hidden="true" />
           Resume Verdict
         </CardTitle>
-        <CardDescription>{verdict.title}</CardDescription>
+        <CardDescription className="text-slate-500">{verdict.title}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 border-l-4 border-blue-500 text-sm leading-6">
         <p className="text-base font-medium text-slate-900">{verdict.summary}</p>
-        <div className="rounded-xl border border-blue-100 bg-white/75 px-3 py-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Primary improvement area
           </p>
           <p className="mt-1 text-muted-foreground">{verdict.improvement}</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-white/75 px-3 py-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Recommended for
           </p>
@@ -564,7 +576,7 @@ function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
       : ["Add more role-specific evidence where possible."];
 
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur transition-all duration-300 hover:shadow-xl">
+    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <BadgeCheck className="size-5 text-emerald-500" aria-hidden="true" />
@@ -572,33 +584,45 @@ function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
         </CardTitle>
         <CardDescription>Fast scan for hiring review.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ul className="grid gap-2 text-sm leading-6">
-          {strengths.map((item) => (
-            <li
-              key={`strength-${item}`}
-              className="flex gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-2 text-emerald-900"
-            >
-              <BadgeCheck
-                className="mt-0.5 size-4 shrink-0 text-emerald-600"
-                aria-hidden="true"
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-          {gaps.map((item) => (
-            <li
-              key={`gap-${item}`}
-              className="flex gap-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-amber-950"
-            >
-              <CircleAlert
-                className="mt-0.5 size-4 shrink-0 text-amber-600"
-                aria-hidden="true"
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+      <CardContent className="grid gap-4">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+            Strengths
+          </p>
+          <ul className="grid gap-2 text-sm leading-6">
+            {strengths.map((item) => (
+              <li
+                key={`strength-${item}`}
+                className="flex gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-emerald-950"
+              >
+                <BadgeCheck
+                  className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                  aria-hidden="true"
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+            Risks
+          </p>
+          <ul className="grid gap-2 text-sm leading-6">
+            {gaps.map((item) => (
+              <li
+                key={`gap-${item}`}
+                className="flex gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-amber-950"
+              >
+                <CircleAlert
+                  className="mt-0.5 size-4 shrink-0 text-amber-600"
+                  aria-hidden="true"
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );
@@ -613,8 +637,8 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
     ["Education", analysis.breakdown.education, 10],
     ["Keywords", analysis.breakdown.keywords, 15],
   ] as const;
-  const center = 140;
-  const radius = 88;
+  const center = 210;
+  const radius = 108;
   const getPoint = (index: number, percentage: number) => {
     const angle = -Math.PI / 2 + (index / metrics.length) * Math.PI * 2;
     const distance = radius * percentage;
@@ -633,18 +657,20 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
     .join(" ");
 
   return (
-    <Card className="rounded-2xl border border-indigo-200/70 bg-white/85 shadow-sm backdrop-blur transition-all duration-300 hover:shadow-xl">
-      <CardHeader className="pb-0">
-        <CardTitle className="flex items-center gap-2">
+    <Card className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+      <CardHeader className="pb-1">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <PanelsTopLeft className="size-5 text-indigo-500" aria-hidden="true" />
           ATS Signal Radar
         </CardTitle>
-        <CardDescription>Section strength across six scoring areas.</CardDescription>
+        <CardDescription className="text-slate-500">
+          Section strength across six scoring areas.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 lg:grid-cols-[300px_1fr] lg:items-center">
-        <div className="mx-auto aspect-square w-full max-w-[300px]">
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,440px)_minmax(180px,1fr)] lg:items-center">
+        <div className="mx-auto aspect-square w-full max-w-[440px] p-4 sm:p-6">
           <svg
-            viewBox="0 0 280 280"
+            viewBox="0 0 420 420"
             role="img"
             aria-label="Radar chart showing ATS section scores"
             className="h-full w-full overflow-visible"
@@ -665,7 +691,7 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
             ))}
             {metrics.map(([label], index) => {
               const end = getPoint(index, 1);
-              const labelPoint = getPoint(index, 1.18);
+              const labelPoint = getPoint(index, 1.32);
 
               return (
                 <g key={label}>
@@ -682,7 +708,7 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
                     y={labelPoint.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    className="fill-slate-600 text-[10px] font-semibold"
+                    className="fill-slate-600 text-[13px] font-semibold"
                   >
                     {label}
                   </text>
@@ -710,11 +736,11 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
             })}
           </svg>
         </div>
-        <div className="grid gap-2">
+        <div className="grid gap-2.5">
           {metrics.map(([label, value, max]) => (
             <div
               key={label}
-              className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm"
             >
               <span className="font-medium text-slate-700">{label}</span>
               <span className="font-semibold text-slate-950">
@@ -787,20 +813,22 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
   ] as const;
 
   return (
-    <Card className="rounded-xl border bg-card/90 shadow-sm transition-all duration-300 hover:shadow-lg">
+    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
       <CardHeader className="pb-0">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <ListChecks className="size-5 text-sky-500" aria-hidden="true" />
           Score Breakdown
         </CardTitle>
-        <CardDescription>Weighted ATS scoring signals.</CardDescription>
+        <CardDescription className="text-slate-500">
+          Weighted ATS scoring signals.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-3">
+      <CardContent className="grid gap-4">
         {breakdownItems.map(
           ([label, value, max, Icon, tooltip, progressClass, iconClass]) => (
-          <div key={label} className="grid gap-1.5">
+          <div key={label} className="grid gap-2">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="flex items-center gap-2 font-medium">
+              <span className="flex items-center gap-2 font-semibold text-slate-800">
                 <Icon className={`size-4 ${iconClass}`} aria-hidden="true" />
                 {label}
                 <span title={tooltip}>
@@ -810,7 +838,7 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
                   />
                 </span>
               </span>
-              <span className="text-muted-foreground">
+              <span className="text-sm font-medium text-slate-500">
                 {value} / {max}
               </span>
             </div>
@@ -845,27 +873,31 @@ function OverviewCard({
 }) {
   return (
     <Card
-      className={`rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${className}`}
+      className={`rounded-2xl border shadow-sm shadow-slate-950/5 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10 ${className}`}
       size="sm"
     >
-      <CardContent className="flex items-center justify-between gap-4 py-2">
+      <CardContent className="relative flex items-center justify-between gap-4 py-4">
+        <div
+          className="pointer-events-none absolute right-3 top-3 size-16 rounded-full bg-white/50 blur-2xl"
+          aria-hidden="true"
+        />
         <button
-          className="flex w-full items-center justify-between gap-4 text-left"
+          className="relative flex w-full items-center justify-between gap-4 text-left"
           onClick={onClick}
           type="button"
         >
           <span>
-            <span className="text-sm font-medium text-muted-foreground">
+            <span className="text-sm font-semibold text-slate-500">
               {title}
             </span>
-            <span className="mt-1 block text-4xl font-semibold tracking-normal">
+            <span className="mt-1 block text-5xl font-semibold tracking-normal text-slate-950 drop-shadow-sm">
               {value}
             </span>
-            <span className="mt-2 inline-flex rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+            <span className="mt-2 inline-flex rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
               {description}
             </span>
           </span>
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/70 shadow-sm">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/80 shadow-lg shadow-white/60 ring-1 ring-white/80 backdrop-blur">
             <Icon className={`size-5 ${iconClassName}`} aria-hidden="true" />
           </span>
         </button>
@@ -886,7 +918,7 @@ function EmptyTabState({
   action: string;
 }) {
   return (
-    <Card className="mx-auto max-w-2xl rounded-2xl border border-dashed border-sky-200 bg-white/80 shadow-sm backdrop-blur">
+    <Card className="mx-auto max-w-2xl rounded-2xl border border-dashed border-sky-200 bg-white shadow-sm shadow-slate-950/5">
       <CardHeader className="items-center text-center">
         <span className="grid size-12 place-items-center rounded-lg bg-muted">
           <Icon className="size-6 text-sky-500" aria-hidden="true" />
@@ -913,7 +945,7 @@ function JobMatchLockedState() {
   ];
 
   return (
-    <Card className="rounded-lg border border-dashed bg-card/80 shadow-sm">
+    <Card className="rounded-2xl border border-dashed border-slate-200 bg-white shadow-sm shadow-slate-950/5">
       <CardHeader className="items-center text-center">
         <span className="grid size-14 place-items-center rounded-lg bg-sky-500/10">
           <SearchCheck className="size-7 text-sky-500" aria-hidden="true" />
@@ -946,13 +978,15 @@ function TopActionItems({ suggestions }: { suggestions: string[] }) {
   const actions = suggestions.slice(0, 3);
 
   return (
-    <Card className="rounded-2xl border border-amber-200/80 bg-amber-50/90 shadow-sm transition-all duration-300 hover:shadow-xl">
+    <Card className="rounded-2xl border border-amber-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
       <CardHeader className="pb-0">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Lightbulb className="size-5 text-amber-500" aria-hidden="true" />
           Top Action Items
         </CardTitle>
-        <CardDescription>Fastest resume improvements to prioritize.</CardDescription>
+        <CardDescription className="text-slate-500">
+          Fastest resume improvements to prioritize.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {actions.length > 0 ? (
@@ -960,7 +994,7 @@ function TopActionItems({ suggestions }: { suggestions: string[] }) {
             {actions.map((item, index) => (
               <li
                 key={item}
-                className="flex gap-3 rounded-xl border border-amber-200/70 bg-white/70 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm"
+                className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm"
               >
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-amber-500 text-xs font-semibold text-white">
                   {index + 1}
@@ -1031,7 +1065,7 @@ function CollapsibleInsight({
   items: string[];
 }) {
   return (
-    <Card className="rounded-lg border bg-card shadow-sm" size="sm">
+    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10" size="sm">
       <Accordion type="single" collapsible>
         <AccordionItem value={title} className="border-0 bg-transparent">
           <AccordionTrigger className="px-3 py-1 hover:bg-transparent">
@@ -1127,28 +1161,38 @@ function InterviewQuestionCategory({
   return (
     <AccordionItem
       value={title}
-      className="rounded-2xl bg-white/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm shadow-slate-950/5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-950/10"
     >
-      <AccordionTrigger>
-        <span className="text-left">
-          <span className="flex items-center gap-2 font-medium">
-            <Icon className={`size-4 ${iconClassName}`} aria-hidden="true" />
-            {title} ({questions.length})
+      <AccordionTrigger className="px-4 py-4 hover:bg-white/60">
+        <span className="flex min-w-0 items-center gap-3 text-left">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+            <Icon className={`size-5 ${iconClassName}`} aria-hidden="true" />
           </span>
-          <span className="mt-1 block text-sm font-normal text-muted-foreground">
-            {description}
+          <span className="min-w-0">
+            <span className="block text-base font-semibold text-slate-950">
+              {title} ({questions.length})
+            </span>
+            <span className="mt-1 block text-sm font-normal text-slate-500">
+              {description}
+            </span>
           </span>
         </span>
       </AccordionTrigger>
-      <AccordionContent>
+      <AccordionContent className="px-4 pb-4">
         {questions.length > 0 ? (
-          <Accordion type="multiple" className="gap-2">
+          <Accordion type="multiple" className="grid gap-2">
             {questions.map((question, index) => (
-              <AccordionItem key={question} value={`${title}-${index}`}>
-                <AccordionTrigger>
+              <AccordionItem
+                key={question}
+                value={`${title}-${index}`}
+                className="rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+              >
+                <AccordionTrigger className="px-3 py-3 hover:bg-slate-50">
                   <span className="flex flex-col gap-1 text-left">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span>{question}</span>
+                      <span className="font-medium leading-6 text-slate-900">
+                        {question}
+                      </span>
                       <span
                         className={`inline-flex rounded-md border px-1.5 py-0.5 text-xs font-medium ${getDifficultyClassName(
                           getQuestionDifficulty(question, index)
@@ -1165,7 +1209,7 @@ function InterviewQuestionCategory({
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
                     <Button
                       size="sm"
                       variant="outline"
@@ -1186,7 +1230,7 @@ function InterviewQuestionCategory({
                   </div>
 
                   {answers[question] && (
-                    <div className="mt-3 rounded-lg border bg-card px-3 py-3">
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                       <p className="text-sm font-medium text-foreground">
                         AI Generated Answer
                       </p>
@@ -1248,7 +1292,7 @@ export default function ResultsPage() {
     return (
       <main className="min-h-screen bg-muted/30 px-6 py-10 text-foreground sm:px-8 lg:px-12">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
-          <Card className="w-full rounded-lg border bg-card shadow-sm">
+          <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
             <CardHeader>
               <CardTitle className="text-2xl">No results found</CardTitle>
               <CardDescription>
@@ -1270,17 +1314,17 @@ export default function ResultsPage() {
   }
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-5 py-8 text-foreground sm:px-8">
+    <main className="relative isolate min-h-screen overflow-hidden bg-slate-50 px-5 py-8 text-foreground sm:px-8">
       <div
-        className="pointer-events-none absolute right-[-8rem] top-[-7rem] -z-10 size-80 rounded-full bg-blue-400/15 blur-3xl"
+        className="pointer-events-none absolute right-[-8rem] top-[-7rem] -z-10 size-80 rounded-full bg-blue-400/10 blur-3xl"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute left-1/2 top-[26rem] -z-10 size-96 -translate-x-1/2 rounded-full bg-violet-400/10 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-[26rem] -z-10 size-96 -translate-x-1/2 rounded-full bg-violet-400/5 blur-3xl"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute bottom-[-8rem] left-[-7rem] -z-10 size-80 rounded-full bg-emerald-400/15 blur-3xl"
+        className="pointer-events-none absolute bottom-[-8rem] left-[-7rem] -z-10 size-80 rounded-full bg-emerald-400/10 blur-3xl"
         aria-hidden="true"
       />
 
@@ -1345,7 +1389,7 @@ export default function ResultsPage() {
             description={scoreLabel}
             icon={Trophy}
             iconClassName="text-blue-600"
-            className="border-blue-200/80 bg-blue-50/90"
+            className="border-blue-200/80 bg-gradient-to-br from-white via-blue-50 to-sky-100/80"
             onClick={() => setActiveTab("ats")}
           />
           <OverviewCard
@@ -1358,7 +1402,7 @@ export default function ResultsPage() {
             }
             icon={SearchCheck}
             iconClassName="text-emerald-600"
-            className="border-emerald-200/80 bg-emerald-50/90"
+            className="border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50 to-teal-100/75"
             onClick={() => setActiveTab("job-match")}
           />
           <OverviewCard
@@ -1371,7 +1415,7 @@ export default function ResultsPage() {
             }
             icon={MessageSquareText}
             iconClassName="text-violet-600"
-            className="border-violet-200/80 bg-violet-50/90"
+            className="border-violet-200/80 bg-gradient-to-br from-white via-violet-50 to-fuchsia-100/70"
             onClick={() => setActiveTab("interview")}
           />
         </section>
@@ -1386,69 +1430,68 @@ export default function ResultsPage() {
           </div>
 
           <TabsContent value="ats" className="grid gap-5">
-            <section className="grid gap-5 xl:grid-cols-[430px_1fr]">
+            <section className="grid gap-5 xl:grid-cols-[520px_1fr]">
               <div className="grid gap-4">
-                <Card className="rounded-2xl border border-blue-200/80 bg-blue-50/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                  <CardHeader className="pb-0">
-                    <CardTitle className="flex items-center gap-2">
+                <Card className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-white via-blue-50/70 to-sky-100/70 shadow-xl shadow-blue-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-950/15">
+                  <CardHeader className="pb-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
                       <Trophy
-                        className={`size-5 ${scoreTone.icon}`}
+                        className={`size-6 ${scoreTone.icon}`}
                         aria-hidden="true"
                       />
                       ATS Score
                     </CardTitle>
-                    <CardDescription className={scoreTone.text}>
+                    <CardDescription className={`text-base font-medium ${scoreTone.text}`}>
                       {getScoreInterpretation(score)}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between gap-5">
-                      <div className="flex items-end gap-2">
+                  <CardContent className="grid gap-5">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-end gap-3">
                         <span
-                          className={`text-6xl font-semibold tracking-normal ${scoreTone.text}`}
+                          className={`text-7xl font-semibold leading-none tracking-normal sm:text-8xl ${scoreTone.text}`}
                         >
                           {score}
                         </span>
-                        <span className="pb-2 text-lg font-medium text-muted-foreground">
+                        <span className="pb-3 text-xl font-medium text-slate-500">
                           / 100
-                        </span>
-                        <span
-                          className={`mb-2 rounded-lg border px-2 py-1 text-sm font-semibold ${scoreTone.badge}`}
-                        >
-                          {atsGrade}
                         </span>
                       </div>
                       <div
-                        className="grid size-24 shrink-0 place-items-center rounded-full shadow-inner"
+                        className="grid size-36 shrink-0 place-items-center rounded-full shadow-inner sm:size-40"
                         style={{
                           background: `conic-gradient(${scoreTone.chart} ${score}%, var(--muted) 0)`,
                         }}
                         aria-label={`ATS score ${score} out of 100`}
                       >
-                        <div className="size-16 rounded-full bg-white/90 ring-1 ring-blue-100" />
+                        <div className="grid size-24 place-items-center rounded-full bg-white ring-1 ring-blue-100 sm:size-28">
+                          <span className={`text-2xl font-semibold ${scoreTone.text}`}>
+                            {atsGrade}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-xl border border-blue-200/70 bg-white/70 px-3 py-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-blue-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Grade
                         </p>
-                        <p className="mt-1 text-lg font-semibold text-slate-950">
+                        <p className="mt-1 text-3xl font-semibold text-slate-950">
                           {atsGrade}
                         </p>
                       </div>
-                      <div className="rounded-xl border border-blue-200/70 bg-white/70 px-3 py-2">
+                      <div className="rounded-xl border border-slate-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Candidate Tier
                         </p>
-                        <p className="mt-1 text-lg font-semibold text-slate-950">
+                        <p className="mt-1 text-xl font-semibold text-slate-950">
                           {candidateTier}
                         </p>
                       </div>
                     </div>
                     <Progress
                       value={score}
-                      className={`mt-4 h-2 bg-background/70 ${scoreTone.progress}`}
+                      className={`h-3 bg-slate-100 ${scoreTone.progress}`}
                     />
                   </CardContent>
                 </Card>
@@ -1466,7 +1509,7 @@ export default function ResultsPage() {
                 <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
                   <RecruiterSummary analysis={results.analysis} />
 
-                  <Card className="rounded-lg border bg-card shadow-sm">
+                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <ListChecks
@@ -1516,12 +1559,12 @@ export default function ResultsPage() {
           <TabsContent value="job-match" className="grid gap-4">
             {results.jobMatch ? (
               <div className="grid gap-4">
-                <div className="grid gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/90 p-3 shadow-sm sm:grid-cols-3">
+                <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm shadow-slate-950/5 sm:grid-cols-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
                       Match Level
                     </p>
-                    <span className="mt-1 inline-flex rounded-full border border-emerald-300/70 bg-white/80 px-3 py-1 text-sm font-semibold text-emerald-700">
+                    <span className="mt-1 inline-flex rounded-full border border-emerald-300/70 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
                       {getMatchLabel(results.jobMatch.matchScore)}
                     </span>
                   </div>
@@ -1544,7 +1587,7 @@ export default function ResultsPage() {
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
-                <Card className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <Card className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-100/60 shadow-lg shadow-emerald-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-950/15">
                   <CardHeader className="pb-0">
                     <CardTitle className="flex items-center gap-2">
                       <SearchCheck
@@ -1559,7 +1602,7 @@ export default function ResultsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-end gap-2">
-                      <span className="text-5xl font-semibold tracking-normal">
+                      <span className="text-6xl font-semibold tracking-normal text-emerald-900">
                         {results.jobMatch.matchScore}
                       </span>
                       <span className="pb-1.5 text-base font-medium text-muted-foreground">
@@ -1574,7 +1617,7 @@ export default function ResultsPage() {
                 </Card>
 
                 <div className="grid gap-4 lg:grid-cols-3">
-                  <Card className="rounded-lg border bg-card shadow-sm">
+                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <ClipboardCheck
@@ -1592,7 +1635,7 @@ export default function ResultsPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-lg border bg-card shadow-sm">
+                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <CircleAlert
@@ -1610,7 +1653,7 @@ export default function ResultsPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-lg border bg-card shadow-sm">
+                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <Lightbulb
@@ -1637,7 +1680,7 @@ export default function ResultsPage() {
 
           <TabsContent value="interview" className="grid gap-4">
             {results.interviewQuestions ? (
-              <Card className="rounded-lg border bg-card shadow-sm">
+              <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
                 <CardHeader className="pb-0">
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquareText
