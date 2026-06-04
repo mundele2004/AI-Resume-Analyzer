@@ -44,9 +44,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { generateResumeReportPdf } from "@/lib/pdf-report";
 
 const RESULTS_STORAGE_KEY = "ats-analysis-result";
+const DASHBOARD_CARD_CLASS =
+  "rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20 dark:hover:shadow-black/30";
+const DASHBOARD_SUBTLE_CARD_CLASS =
+  "rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/70";
+const MUTED_TEXT_CLASS = "text-slate-500 dark:text-slate-400";
+const STRONG_TEXT_CLASS = "text-slate-950 dark:text-slate-50";
 
 type AtsAnalysis = {
   atsScore: number;
@@ -461,7 +468,7 @@ function SkillChips({ skills }: { skills: string[] }) {
               </span>
             ))}
             {category.skills.length > visibleLimit && (
-              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                 +{category.skills.length - visibleLimit} more
               </span>
             )}
@@ -478,13 +485,13 @@ function SkillChips({ skills }: { skills: string[] }) {
             {uncategorized.slice(0, 8).map((skill) => (
               <span
                 key={skill}
-                className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               >
                 {skill}
               </span>
             ))}
             {uncategorized.length > 8 && (
-              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                 +{uncategorized.length - 8} more
               </span>
             )}
@@ -510,7 +517,7 @@ function WarningChips({ skills }: { skills: string[] }) {
       {skills.map((skill) => (
         <span
           key={skill}
-          className="inline-flex items-center rounded-md border border-amber-300/70 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+          className="inline-flex items-center rounded-md border border-amber-300/70 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200"
         >
           {skill}
         </span>
@@ -538,23 +545,23 @@ function ResumeVerdictCard({ analysis }: { analysis: AtsAnalysis }) {
   const verdict = getResumeVerdict(analysis);
 
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+    <Card className={DASHBOARD_CARD_CLASS}>
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="size-5 text-sky-500" aria-hidden="true" />
           Resume Verdict
         </CardTitle>
-        <CardDescription className="text-slate-500">{verdict.title}</CardDescription>
+        <CardDescription className={MUTED_TEXT_CLASS}>{verdict.title}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 border-l-4 border-blue-500 text-sm leading-6">
-        <p className="text-base font-medium text-slate-900">{verdict.summary}</p>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <p className={`text-base font-medium ${STRONG_TEXT_CLASS}`}>{verdict.summary}</p>
+        <div className={`${DASHBOARD_SUBTLE_CARD_CLASS} px-3 py-2`}>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Primary improvement area
           </p>
           <p className="mt-1 text-muted-foreground">{verdict.improvement}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <div className={`${DASHBOARD_SUBTLE_CARD_CLASS} px-3 py-2`}>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Recommended for
           </p>
@@ -576,7 +583,7 @@ function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
       : ["Add more role-specific evidence where possible."];
 
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+    <Card className={DASHBOARD_CARD_CLASS}>
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <BadgeCheck className="size-5 text-emerald-500" aria-hidden="true" />
@@ -586,17 +593,17 @@ function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
             Strengths
           </p>
           <ul className="grid gap-2 text-sm leading-6">
             {strengths.map((item) => (
               <li
                 key={`strength-${item}`}
-                className="flex gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-emerald-950"
+                className="flex gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-emerald-950 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-100"
               >
                 <BadgeCheck
-                  className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                  className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-300"
                   aria-hidden="true"
                 />
                 <span>{item}</span>
@@ -605,17 +612,17 @@ function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
           </ul>
         </div>
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
             Risks
           </p>
           <ul className="grid gap-2 text-sm leading-6">
             {gaps.map((item) => (
               <li
                 key={`gap-${item}`}
-                className="flex gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-amber-950"
+                className="flex gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-amber-950 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100"
               >
                 <CircleAlert
-                  className="mt-0.5 size-4 shrink-0 text-amber-600"
+                  className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300"
                   aria-hidden="true"
                 />
                 <span>{item}</span>
@@ -657,13 +664,13 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
     .join(" ");
 
   return (
-    <Card className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+    <Card className={`${DASHBOARD_CARD_CLASS} overflow-visible`}>
       <CardHeader className="pb-1">
         <CardTitle className="flex items-center gap-2 text-lg">
           <PanelsTopLeft className="size-5 text-indigo-500" aria-hidden="true" />
           ATS Signal Radar
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className={MUTED_TEXT_CLASS}>
           Section strength across six scoring areas.
         </CardDescription>
       </CardHeader>
@@ -685,7 +692,7 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
                     return `${point.x},${point.y}`;
                   })
                   .join(" ")}
-                className="fill-transparent stroke-slate-200"
+                className="fill-transparent stroke-slate-200 dark:stroke-slate-700"
                 strokeWidth="1"
               />
             ))}
@@ -700,7 +707,7 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
                     y1={center}
                     x2={end.x}
                     y2={end.y}
-                    className="stroke-slate-200"
+                    className="stroke-slate-200 dark:stroke-slate-700"
                     strokeWidth="1"
                   />
                   <text
@@ -708,7 +715,7 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
                     y={labelPoint.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    className="fill-slate-600 text-[13px] font-semibold"
+                    className="fill-slate-600 text-[13px] font-semibold dark:fill-slate-300"
                   >
                     {label}
                   </text>
@@ -740,10 +747,10 @@ function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
           {metrics.map(([label, value, max]) => (
             <div
               key={label}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm"
+              className={`${DASHBOARD_SUBTLE_CARD_CLASS} flex items-center justify-between px-3.5 py-3 text-sm`}
             >
-              <span className="font-medium text-slate-700">{label}</span>
-              <span className="font-semibold text-slate-950">
+              <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
+              <span className={STRONG_TEXT_CLASS}>
                 {value}/{max}
               </span>
             </div>
@@ -813,13 +820,13 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
   ] as const;
 
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+    <Card className={DASHBOARD_CARD_CLASS}>
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ListChecks className="size-5 text-sky-500" aria-hidden="true" />
           Score Breakdown
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className={MUTED_TEXT_CLASS}>
           Weighted ATS scoring signals.
         </CardDescription>
       </CardHeader>
@@ -828,7 +835,7 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
           ([label, value, max, Icon, tooltip, progressClass, iconClass]) => (
           <div key={label} className="grid gap-2">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="flex items-center gap-2 font-semibold text-slate-800">
+              <span className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
                 <Icon className={`size-4 ${iconClass}`} aria-hidden="true" />
                 {label}
                 <span title={tooltip}>
@@ -838,13 +845,13 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
                   />
                 </span>
               </span>
-              <span className="text-sm font-medium text-slate-500">
+              <span className={`text-sm font-medium ${MUTED_TEXT_CLASS}`}>
                 {value} / {max}
               </span>
             </div>
             <Progress
               value={(value / max) * 100}
-              className={`h-2 bg-slate-100 ${progressClass}`}
+              className={`h-2 bg-slate-100 dark:bg-slate-800 ${progressClass}`}
             />
           </div>
           )
@@ -878,7 +885,7 @@ function OverviewCard({
     >
       <CardContent className="relative flex items-center justify-between gap-4 py-4">
         <div
-          className="pointer-events-none absolute right-3 top-3 size-16 rounded-full bg-white/50 blur-2xl"
+          className="pointer-events-none absolute right-3 top-3 size-16 rounded-full bg-white/50 blur-2xl dark:bg-white/10"
           aria-hidden="true"
         />
         <button
@@ -887,17 +894,17 @@ function OverviewCard({
           type="button"
         >
           <span>
-            <span className="text-sm font-semibold text-slate-500">
+            <span className={`text-sm font-semibold ${MUTED_TEXT_CLASS}`}>
               {title}
             </span>
-            <span className="mt-1 block text-5xl font-semibold tracking-normal text-slate-950 drop-shadow-sm">
+            <span className={`mt-1 block text-5xl font-semibold tracking-normal drop-shadow-sm ${STRONG_TEXT_CLASS}`}>
               {value}
             </span>
-            <span className="mt-2 inline-flex rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
+            <span className="mt-2 inline-flex rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200">
               {description}
             </span>
           </span>
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/80 shadow-lg shadow-white/60 ring-1 ring-white/80 backdrop-blur">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/80 shadow-lg shadow-white/60 ring-1 ring-white/80 backdrop-blur dark:bg-slate-950/50 dark:shadow-black/20 dark:ring-white/10">
             <Icon className={`size-5 ${iconClassName}`} aria-hidden="true" />
           </span>
         </button>
@@ -918,7 +925,7 @@ function EmptyTabState({
   action: string;
 }) {
   return (
-    <Card className="mx-auto max-w-2xl rounded-2xl border border-dashed border-sky-200 bg-white shadow-sm shadow-slate-950/5">
+    <Card className="mx-auto max-w-2xl rounded-2xl border border-dashed border-sky-200 bg-white shadow-sm shadow-slate-950/5 dark:border-sky-400/30 dark:bg-slate-900 dark:shadow-black/20">
       <CardHeader className="items-center text-center">
         <span className="grid size-12 place-items-center rounded-lg bg-muted">
           <Icon className="size-6 text-sky-500" aria-hidden="true" />
@@ -945,7 +952,7 @@ function JobMatchLockedState() {
   ];
 
   return (
-    <Card className="rounded-2xl border border-dashed border-slate-200 bg-white shadow-sm shadow-slate-950/5">
+    <Card className="rounded-2xl border border-dashed border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
       <CardHeader className="items-center text-center">
         <span className="grid size-14 place-items-center rounded-lg bg-sky-500/10">
           <SearchCheck className="size-7 text-sky-500" aria-hidden="true" />
@@ -978,13 +985,13 @@ function TopActionItems({ suggestions }: { suggestions: string[] }) {
   const actions = suggestions.slice(0, 3);
 
   return (
-    <Card className="rounded-2xl border border-amber-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+    <Card className={`${DASHBOARD_CARD_CLASS} border-amber-200 dark:border-amber-400/25`}>
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Lightbulb className="size-5 text-amber-500" aria-hidden="true" />
           Top Action Items
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className={MUTED_TEXT_CLASS}>
           Fastest resume improvements to prioritize.
         </CardDescription>
       </CardHeader>
@@ -994,7 +1001,7 @@ function TopActionItems({ suggestions }: { suggestions: string[] }) {
             {actions.map((item, index) => (
               <li
                 key={item}
-                className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm"
+                className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100"
               >
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-amber-500 text-xs font-semibold text-white">
                   {index + 1}
@@ -1065,7 +1072,7 @@ function CollapsibleInsight({
   items: string[];
 }) {
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10" size="sm">
+    <Card className={DASHBOARD_CARD_CLASS} size="sm">
       <Accordion type="single" collapsible>
         <AccordionItem value={title} className="border-0 bg-transparent">
           <AccordionTrigger className="px-3 py-1 hover:bg-transparent">
@@ -1161,18 +1168,18 @@ function InterviewQuestionCategory({
   return (
     <AccordionItem
       value={title}
-      className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm shadow-slate-950/5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-950/10"
+      className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm shadow-slate-950/5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-950/10 dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 dark:shadow-black/20 dark:hover:shadow-black/30"
     >
-      <AccordionTrigger className="px-4 py-4 hover:bg-white/60">
+      <AccordionTrigger className="px-4 py-4 hover:bg-white/60 dark:hover:bg-slate-800/70">
         <span className="flex min-w-0 items-center gap-3 text-left">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-700">
             <Icon className={`size-5 ${iconClassName}`} aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <span className="block text-base font-semibold text-slate-950">
+            <span className={`block text-base font-semibold ${STRONG_TEXT_CLASS}`}>
               {title} ({questions.length})
             </span>
-            <span className="mt-1 block text-sm font-normal text-slate-500">
+            <span className={`mt-1 block text-sm font-normal ${MUTED_TEXT_CLASS}`}>
               {description}
             </span>
           </span>
@@ -1185,12 +1192,12 @@ function InterviewQuestionCategory({
               <AccordionItem
                 key={question}
                 value={`${title}-${index}`}
-                className="rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                className="rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/80"
               >
-                <AccordionTrigger className="px-3 py-3 hover:bg-slate-50">
+                <AccordionTrigger className="px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                   <span className="flex flex-col gap-1 text-left">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium leading-6 text-slate-900">
+                      <span className="font-medium leading-6 text-slate-900 dark:text-slate-100">
                         {question}
                       </span>
                       <span
@@ -1230,7 +1237,7 @@ function InterviewQuestionCategory({
                   </div>
 
                   {answers[question] && (
-                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                       <p className="text-sm font-medium text-foreground">
                         AI Generated Answer
                       </p>
@@ -1292,7 +1299,7 @@ export default function ResultsPage() {
     return (
       <main className="min-h-screen bg-muted/30 px-6 py-10 text-foreground sm:px-8 lg:px-12">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
-          <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
+          <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20">
             <CardHeader>
               <CardTitle className="text-2xl">No results found</CardTitle>
               <CardDescription>
@@ -1314,17 +1321,17 @@ export default function ResultsPage() {
   }
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-slate-50 px-5 py-8 text-foreground sm:px-8">
+    <main className="relative isolate min-h-screen overflow-hidden bg-slate-50 px-5 py-8 text-foreground transition-colors duration-300 dark:bg-[#0B1120] sm:px-8">
       <div
-        className="pointer-events-none absolute right-[-8rem] top-[-7rem] -z-10 size-80 rounded-full bg-blue-400/10 blur-3xl"
+        className="pointer-events-none absolute right-[-8rem] top-[-7rem] -z-10 size-80 rounded-full bg-blue-400/10 blur-3xl dark:bg-blue-500/15"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute left-1/2 top-[26rem] -z-10 size-96 -translate-x-1/2 rounded-full bg-violet-400/5 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-[26rem] -z-10 size-96 -translate-x-1/2 rounded-full bg-violet-400/5 blur-3xl dark:bg-violet-500/10"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute bottom-[-8rem] left-[-7rem] -z-10 size-80 rounded-full bg-emerald-400/10 blur-3xl"
+        className="pointer-events-none absolute bottom-[-8rem] left-[-7rem] -z-10 size-80 rounded-full bg-emerald-400/10 blur-3xl dark:bg-emerald-500/10"
         aria-hidden="true"
       />
 
@@ -1334,7 +1341,7 @@ export default function ResultsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
               ResumeAI
             </p>
-            <h1 className="mt-2 text-4xl font-semibold tracking-normal text-slate-950 sm:text-5xl">
+            <h1 className={`mt-2 text-4xl font-semibold tracking-normal sm:text-5xl ${STRONG_TEXT_CLASS}`}>
               Resume Intelligence Report
             </h1>
             <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
@@ -1346,7 +1353,7 @@ export default function ResultsPage() {
                 (badge) => (
                   <span
                     key={badge}
-                    className="inline-flex items-center rounded-full border border-white/70 bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur"
+                    className="inline-flex items-center rounded-full border border-white/70 bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200"
                   >
                     <BadgeCheck
                       className="mr-1.5 size-3.5 text-emerald-500"
@@ -1358,9 +1365,10 @@ export default function ResultsPage() {
               )}
             </div>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <ThemeToggle />
             <Button
-              className="h-10 w-full px-4 shadow-lg shadow-blue-950/10 sm:w-auto"
+              className="h-10 w-full px-4 shadow-lg shadow-blue-950/10 dark:shadow-blue-500/10 sm:w-auto"
               disabled={isDownloadingReport}
               onClick={handleDownloadReport}
             >
@@ -1389,7 +1397,7 @@ export default function ResultsPage() {
             description={scoreLabel}
             icon={Trophy}
             iconClassName="text-blue-600"
-            className="border-blue-200/80 bg-gradient-to-br from-white via-blue-50 to-sky-100/80"
+            className="border-blue-200/80 bg-gradient-to-br from-white via-blue-50 to-sky-100/80 dark:border-blue-400/25 dark:from-slate-900 dark:via-blue-950/50 dark:to-slate-900"
             onClick={() => setActiveTab("ats")}
           />
           <OverviewCard
@@ -1402,7 +1410,7 @@ export default function ResultsPage() {
             }
             icon={SearchCheck}
             iconClassName="text-emerald-600"
-            className="border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50 to-teal-100/75"
+            className="border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50 to-teal-100/75 dark:border-emerald-400/25 dark:from-slate-900 dark:via-emerald-950/45 dark:to-slate-900"
             onClick={() => setActiveTab("job-match")}
           />
           <OverviewCard
@@ -1415,7 +1423,7 @@ export default function ResultsPage() {
             }
             icon={MessageSquareText}
             iconClassName="text-violet-600"
-            className="border-violet-200/80 bg-gradient-to-br from-white via-violet-50 to-fuchsia-100/70"
+            className="border-violet-200/80 bg-gradient-to-br from-white via-violet-50 to-fuchsia-100/70 dark:border-violet-400/25 dark:from-slate-900 dark:via-violet-950/45 dark:to-slate-900"
             onClick={() => setActiveTab("interview")}
           />
         </section>
@@ -1432,7 +1440,7 @@ export default function ResultsPage() {
           <TabsContent value="ats" className="grid gap-5">
             <section className="grid gap-5 xl:grid-cols-[520px_1fr]">
               <div className="grid gap-4">
-                <Card className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-white via-blue-50/70 to-sky-100/70 shadow-xl shadow-blue-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-950/15">
+                <Card className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-white via-blue-50/70 to-sky-100/70 shadow-xl shadow-blue-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-950/15 dark:border-blue-400/25 dark:from-slate-900 dark:via-blue-950/50 dark:to-slate-900 dark:shadow-blue-950/30 dark:hover:shadow-blue-500/10">
                   <CardHeader className="pb-1">
                     <CardTitle className="flex items-center gap-2 text-xl">
                       <Trophy
@@ -1453,7 +1461,7 @@ export default function ResultsPage() {
                         >
                           {score}
                         </span>
-                        <span className="pb-3 text-xl font-medium text-slate-500">
+                        <span className={`pb-3 text-xl font-medium ${MUTED_TEXT_CLASS}`}>
                           / 100
                         </span>
                       </div>
@@ -1464,7 +1472,7 @@ export default function ResultsPage() {
                         }}
                         aria-label={`ATS score ${score} out of 100`}
                       >
-                        <div className="grid size-24 place-items-center rounded-full bg-white ring-1 ring-blue-100 sm:size-28">
+                        <div className="grid size-24 place-items-center rounded-full bg-white ring-1 ring-blue-100 dark:bg-slate-950 dark:ring-blue-400/20 sm:size-28">
                           <span className={`text-2xl font-semibold ${scoreTone.text}`}>
                             {atsGrade}
                           </span>
@@ -1472,26 +1480,26 @@ export default function ResultsPage() {
                       </div>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-blue-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur">
+                      <div className="rounded-xl border border-blue-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/45">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Grade
                         </p>
-                        <p className="mt-1 text-3xl font-semibold text-slate-950">
+                        <p className={`mt-1 text-3xl font-semibold ${STRONG_TEXT_CLASS}`}>
                           {atsGrade}
                         </p>
                       </div>
-                      <div className="rounded-xl border border-slate-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur">
+                      <div className="rounded-xl border border-slate-200 bg-white/75 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/45">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Candidate Tier
                         </p>
-                        <p className="mt-1 text-xl font-semibold text-slate-950">
+                        <p className={`mt-1 text-xl font-semibold ${STRONG_TEXT_CLASS}`}>
                           {candidateTier}
                         </p>
                       </div>
                     </div>
                     <Progress
                       value={score}
-                      className={`h-3 bg-slate-100 ${scoreTone.progress}`}
+                      className={`h-3 bg-slate-100 dark:bg-slate-800 ${scoreTone.progress}`}
                     />
                   </CardContent>
                 </Card>
@@ -1509,7 +1517,7 @@ export default function ResultsPage() {
                 <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
                   <RecruiterSummary analysis={results.analysis} />
 
-                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+                  <Card className={DASHBOARD_CARD_CLASS}>
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <ListChecks
@@ -1559,35 +1567,35 @@ export default function ResultsPage() {
           <TabsContent value="job-match" className="grid gap-4">
             {results.jobMatch ? (
               <div className="grid gap-4">
-                <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm shadow-slate-950/5 sm:grid-cols-3">
+                <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-emerald-400/25 dark:bg-slate-900 dark:shadow-black/20 sm:grid-cols-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
                       Match Level
                     </p>
-                    <span className="mt-1 inline-flex rounded-full border border-emerald-300/70 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                    <span className="mt-1 inline-flex rounded-full border border-emerald-300/70 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200">
                       {getMatchLabel(results.jobMatch.matchScore)}
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
                       Matched Skills
                     </p>
-                    <p className="mt-1 text-2xl font-semibold text-emerald-900">
+                    <p className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">
                       {results.jobMatch.matchedSkills.length}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
                       Missing Skills
                     </p>
-                    <p className="mt-1 text-2xl font-semibold text-amber-800">
+                    <p className="mt-1 text-2xl font-semibold text-amber-800 dark:text-amber-100">
                       {results.jobMatch.missingKeywords.length}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
-                <Card className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-100/60 shadow-lg shadow-emerald-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-950/15">
+                <Card className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-100/60 shadow-lg shadow-emerald-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-950/15 dark:border-emerald-400/25 dark:from-slate-900 dark:via-emerald-950/45 dark:to-slate-900 dark:shadow-emerald-950/30 dark:hover:shadow-emerald-500/10">
                   <CardHeader className="pb-0">
                     <CardTitle className="flex items-center gap-2">
                       <SearchCheck
@@ -1602,7 +1610,7 @@ export default function ResultsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-end gap-2">
-                      <span className="text-6xl font-semibold tracking-normal text-emerald-900">
+                      <span className="text-6xl font-semibold tracking-normal text-emerald-900 dark:text-emerald-100">
                         {results.jobMatch.matchScore}
                       </span>
                       <span className="pb-1.5 text-base font-medium text-muted-foreground">
@@ -1611,13 +1619,13 @@ export default function ResultsPage() {
                     </div>
                     <Progress
                       value={results.jobMatch.matchScore}
-                      className="mt-4 h-2 bg-white/70 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-emerald-400 [&_[data-slot=progress-indicator]]:to-emerald-600"
+                      className="mt-4 h-2 bg-white/70 dark:bg-slate-800 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-emerald-400 [&_[data-slot=progress-indicator]]:to-emerald-600"
                     />
                   </CardContent>
                 </Card>
 
                 <div className="grid gap-4 lg:grid-cols-3">
-                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+                  <Card className={DASHBOARD_CARD_CLASS}>
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <ClipboardCheck
@@ -1635,7 +1643,7 @@ export default function ResultsPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+                  <Card className={DASHBOARD_CARD_CLASS}>
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <CircleAlert
@@ -1653,7 +1661,7 @@ export default function ResultsPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+                  <Card className={DASHBOARD_CARD_CLASS}>
                     <CardHeader className="pb-0">
                       <CardTitle className="flex items-center gap-2">
                         <Lightbulb
@@ -1680,7 +1688,7 @@ export default function ResultsPage() {
 
           <TabsContent value="interview" className="grid gap-4">
             {results.interviewQuestions ? (
-              <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-all duration-200 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-950/10">
+              <Card className={DASHBOARD_CARD_CLASS}>
                 <CardHeader className="pb-0">
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquareText
