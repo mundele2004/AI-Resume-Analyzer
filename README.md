@@ -13,7 +13,7 @@ Transform resumes into actionable career insights with ATS scoring, job-match an
 
 ## 🌐 Live Demo
 
-🔗 **Live Application:** https://your-domain.vercel.app
+🔗 **Live Application:** https://ai-resume-analyzer-tau-seven-73.vercel.app
 
 📂 **GitHub Repository:** https://github.com/navalmishra/AI-Resume-Analyzer
 
