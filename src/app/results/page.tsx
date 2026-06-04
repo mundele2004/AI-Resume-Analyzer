@@ -596,8 +596,8 @@ function JobMatchLockedState() {
   return (
     <Card className="rounded-lg border border-dashed bg-card/80 shadow-sm">
       <CardHeader className="items-center text-center">
-        <span className="grid size-14 place-items-center rounded-lg bg-sky-500/10 text-2xl">
-          🎯
+        <span className="grid size-14 place-items-center rounded-lg bg-sky-500/10">
+          <SearchCheck className="size-7 text-sky-500" aria-hidden="true" />
         </span>
         <CardTitle className="text-xl">Job Match Analysis Locked</CardTitle>
         <CardDescription className="max-w-xl leading-6">
