@@ -249,27 +249,51 @@ function getScoreTone(score: number) {
 }
 
 function getMatchLabel(score: number) {
+  if (score >= 90) {
+    return "Excellent Match";
+  }
+
   if (score >= 85) {
-    return "Strong job match";
+    return "Strong Match";
   }
 
   if (score >= 65) {
-    return "Partial job match";
+    return "Partial Match";
   }
 
   return "Keyword gap detected";
 }
 
-function getOverallAssessment(analysis: AtsAnalysis) {
-  if (analysis.atsScore >= 90) {
-    return "Strong resume foundation with clear ATS signals. Focus on small keyword and role-specific refinements before applying.";
+function getScoreInterpretation(score: number) {
+  if (score >= 90) {
+    return "Excellent";
   }
 
-  if (analysis.atsScore >= 70) {
-    return "Good resume foundation with a few important optimization gaps. Prioritize the highest-impact suggestions before sending applications.";
+  if (score >= 80) {
+    return "Competitive";
   }
 
-  return "This resume needs targeted ATS improvements. Start with missing sections, measurable impact, and role-aligned keywords.";
+  if (score >= 70) {
+    return "Good";
+  }
+
+  return "Needs Improvement";
+}
+
+function getCandidateTier(score: number) {
+  if (score >= 90) {
+    return "Tier 1 Candidate";
+  }
+
+  if (score >= 80) {
+    return "Competitive Candidate";
+  }
+
+  if (score >= 70) {
+    return "Emerging Candidate";
+  }
+
+  return "Needs Resume Focus";
 }
 
 function getResumeVerdict(analysis: AtsAnalysis) {
@@ -368,12 +392,113 @@ function SkillChips({ skills }: { skills: string[] }) {
     );
   }
 
+  const categories = [
+    {
+      title: "Frontend",
+      values: ["React", "Next.js", "TypeScript", "JavaScript", "Tailwind CSS", "Tailwind"],
+      className:
+        "border-blue-500/25 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 dark:text-blue-300",
+    },
+    {
+      title: "Backend",
+      values: ["Java", "Spring Boot", "REST APIs", "REST API", "Node.js", "Express"],
+      className:
+        "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300",
+    },
+    {
+      title: "Database",
+      values: ["PostgreSQL", "MySQL", "MongoDB", "SQL"],
+      className:
+        "border-orange-500/25 bg-orange-500/10 text-orange-700 hover:bg-orange-500/15 dark:text-orange-300",
+    },
+    {
+      title: "DevOps",
+      values: ["Docker", "Vercel", "Git", "AWS", "Azure", "GCP"],
+      className:
+        "border-violet-500/25 bg-violet-500/10 text-violet-700 hover:bg-violet-500/15 dark:text-violet-300",
+    },
+    {
+      title: "Languages",
+      values: ["Java", "Python", "C++", "C", "JavaScript", "TypeScript"],
+      className:
+        "border-slate-500/25 bg-slate-500/10 text-slate-700 hover:bg-slate-500/15 dark:text-slate-300",
+    },
+  ];
+  const normalizedSkills = new Set(skills.map((skill) => skill.toLowerCase()));
+  const categorized = categories
+    .map((category) => ({
+      ...category,
+      skills: category.values.filter((skill) =>
+        normalizedSkills.has(skill.toLowerCase())
+      ),
+    }))
+    .filter((category) => category.skills.length > 0);
+  const categorizedSkills = new Set(
+    categorized.flatMap((category) =>
+      category.skills.map((skill) => skill.toLowerCase())
+    )
+  );
+  const uncategorized = skills.filter(
+    (skill) => !categorizedSkills.has(skill.toLowerCase())
+  );
+
+  return (
+    <div className="grid gap-3">
+      {categorized.map((category) => (
+        <div key={category.title} className="grid gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {category.title}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {category.skills.map((skill) => (
+              <span
+                key={`${category.title}-${skill}`}
+                className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 ${category.className}`}
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {uncategorized.length > 0 && (
+        <div className="grid gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Other
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {uncategorized.map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center rounded-lg border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WarningChips({ skills }: { skills: string[] }) {
+  if (skills.length === 0) {
+    return (
+      <EmptyInlineState
+        title="No missing keywords"
+        description="The analysis did not identify missing job-description terms."
+      />
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {skills.map((skill) => (
         <span
           key={skill}
-          className="inline-flex items-center rounded-lg border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-sm"
+          className="inline-flex items-center rounded-lg border border-amber-300/70 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         >
           {skill}
         </span>
@@ -401,7 +526,7 @@ function ResumeVerdictCard({ analysis }: { analysis: AtsAnalysis }) {
   const verdict = getResumeVerdict(analysis);
 
   return (
-    <Card className="rounded-lg border bg-card shadow-sm">
+    <Card className="rounded-2xl border border-blue-200/80 bg-blue-50/80 shadow-sm transition-all duration-300 hover:shadow-xl">
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="size-5 text-sky-500" aria-hidden="true" />
@@ -409,19 +534,194 @@ function ResumeVerdictCard({ analysis }: { analysis: AtsAnalysis }) {
         </CardTitle>
         <CardDescription>{verdict.title}</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-3 text-sm leading-6">
-        <p className="font-medium text-foreground">{verdict.summary}</p>
-        <div className="rounded-lg border bg-background px-3 py-2">
+      <CardContent className="grid gap-3 border-l-4 border-blue-500 text-sm leading-6">
+        <p className="text-base font-medium text-slate-900">{verdict.summary}</p>
+        <div className="rounded-xl border border-blue-100 bg-white/75 px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Primary improvement area
           </p>
           <p className="mt-1 text-muted-foreground">{verdict.improvement}</p>
         </div>
-        <div className="rounded-lg border bg-background px-3 py-2">
+        <div className="rounded-xl border border-blue-100 bg-white/75 px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Recommended for
           </p>
           <p className="mt-1 text-muted-foreground">{verdict.recommendedFor}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecruiterSummary({ analysis }: { analysis: AtsAnalysis }) {
+  const strengths =
+    analysis.strengths.length > 0
+      ? analysis.strengths.slice(0, 2)
+      : ["Clear resume structure and baseline ATS readability."];
+  const gaps =
+    analysis.weaknesses.length > 0
+      ? analysis.weaknesses.slice(0, 2)
+      : ["Add more role-specific evidence where possible."];
+
+  return (
+    <Card className="rounded-2xl border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur transition-all duration-300 hover:shadow-xl">
+      <CardHeader className="pb-0">
+        <CardTitle className="flex items-center gap-2">
+          <BadgeCheck className="size-5 text-emerald-500" aria-hidden="true" />
+          Recruiter Summary
+        </CardTitle>
+        <CardDescription>Fast scan for hiring review.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="grid gap-2 text-sm leading-6">
+          {strengths.map((item) => (
+            <li
+              key={`strength-${item}`}
+              className="flex gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-2 text-emerald-900"
+            >
+              <BadgeCheck
+                className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                aria-hidden="true"
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+          {gaps.map((item) => (
+            <li
+              key={`gap-${item}`}
+              className="flex gap-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-amber-950"
+            >
+              <CircleAlert
+                className="mt-0.5 size-4 shrink-0 text-amber-600"
+                aria-hidden="true"
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RadarChart({ analysis }: { analysis: AtsAnalysis }) {
+  const metrics = [
+    ["Contact", analysis.breakdown.contact, 10],
+    ["Skills", analysis.breakdown.skills, 20],
+    ["Projects", analysis.breakdown.projects, 25],
+    ["Experience", analysis.breakdown.experience, 25],
+    ["Education", analysis.breakdown.education, 10],
+    ["Keywords", analysis.breakdown.keywords, 15],
+  ] as const;
+  const center = 140;
+  const radius = 88;
+  const getPoint = (index: number, percentage: number) => {
+    const angle = -Math.PI / 2 + (index / metrics.length) * Math.PI * 2;
+    const distance = radius * percentage;
+
+    return {
+      x: center + Math.cos(angle) * distance,
+      y: center + Math.sin(angle) * distance,
+    };
+  };
+  const polygonPoints = metrics
+    .map(([, value, max], index) => {
+      const point = getPoint(index, Math.min(value / max, 1));
+
+      return `${point.x},${point.y}`;
+    })
+    .join(" ");
+
+  return (
+    <Card className="rounded-2xl border border-indigo-200/70 bg-white/85 shadow-sm backdrop-blur transition-all duration-300 hover:shadow-xl">
+      <CardHeader className="pb-0">
+        <CardTitle className="flex items-center gap-2">
+          <PanelsTopLeft className="size-5 text-indigo-500" aria-hidden="true" />
+          ATS Signal Radar
+        </CardTitle>
+        <CardDescription>Section strength across six scoring areas.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 lg:grid-cols-[300px_1fr] lg:items-center">
+        <div className="mx-auto aspect-square w-full max-w-[300px]">
+          <svg
+            viewBox="0 0 280 280"
+            role="img"
+            aria-label="Radar chart showing ATS section scores"
+            className="h-full w-full overflow-visible"
+          >
+            {[0.25, 0.5, 0.75, 1].map((level) => (
+              <polygon
+                key={level}
+                points={metrics
+                  .map((_, index) => {
+                    const point = getPoint(index, level);
+
+                    return `${point.x},${point.y}`;
+                  })
+                  .join(" ")}
+                className="fill-transparent stroke-slate-200"
+                strokeWidth="1"
+              />
+            ))}
+            {metrics.map(([label], index) => {
+              const end = getPoint(index, 1);
+              const labelPoint = getPoint(index, 1.18);
+
+              return (
+                <g key={label}>
+                  <line
+                    x1={center}
+                    y1={center}
+                    x2={end.x}
+                    y2={end.y}
+                    className="stroke-slate-200"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={labelPoint.x}
+                    y={labelPoint.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-slate-600 text-[10px] font-semibold"
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
+            <polygon
+              points={polygonPoints}
+              className="fill-indigo-500/20 stroke-indigo-500"
+              strokeWidth="2"
+            />
+            {metrics.map(([, value, max], index) => {
+              const point = getPoint(index, Math.min(value / max, 1));
+
+              return (
+                <circle
+                  key={`${index}-${value}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r="3.5"
+                  className="fill-white stroke-indigo-500"
+                  strokeWidth="2"
+                />
+              );
+            })}
+          </svg>
+        </div>
+        <div className="grid gap-2">
+          {metrics.map(([label, value, max]) => (
+            <div
+              key={label}
+              className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-sm"
+            >
+              <span className="font-medium text-slate-700">{label}</span>
+              <span className="font-semibold text-slate-950">
+                {value}/{max}
+              </span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -436,6 +736,8 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       10,
       Phone,
       "Email, phone, and LinkedIn/GitHub signals.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-blue-400 [&_[data-slot=progress-indicator]]:to-blue-600",
+      "text-blue-500",
     ],
     [
       "Skills",
@@ -443,6 +745,8 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       20,
       Wrench,
       "Skills section presence and at least five technical skills.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-emerald-400 [&_[data-slot=progress-indicator]]:to-emerald-600",
+      "text-emerald-500",
     ],
     [
       "Projects",
@@ -450,6 +754,8 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       25,
       PanelsTopLeft,
       "Projects section, multiple projects, and measurable impact.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-violet-400 [&_[data-slot=progress-indicator]]:to-violet-600",
+      "text-violet-500",
     ],
     [
       "Experience",
@@ -457,6 +763,8 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       25,
       BriefcaseBusiness,
       "Experience section plus internship or job experience signals.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-amber-400 [&_[data-slot=progress-indicator]]:to-amber-600",
+      "text-amber-500",
     ],
     [
       "Education",
@@ -464,6 +772,8 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       10,
       GraduationCap,
       "Education section presence.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-cyan-400 [&_[data-slot=progress-indicator]]:to-cyan-600",
+      "text-cyan-500",
     ],
     [
       "Keywords",
@@ -471,11 +781,13 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
       15,
       SearchCheck,
       "Common ATS keywords detected in the resume.",
+      "[&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-indigo-400 [&_[data-slot=progress-indicator]]:to-indigo-600",
+      "text-indigo-500",
     ],
   ] as const;
 
   return (
-    <Card className="rounded-lg border bg-card shadow-sm">
+    <Card className="rounded-xl border bg-card/90 shadow-sm transition-all duration-300 hover:shadow-lg">
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <ListChecks className="size-5 text-sky-500" aria-hidden="true" />
@@ -484,11 +796,12 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
         <CardDescription>Weighted ATS scoring signals.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {breakdownItems.map(([label, value, max, Icon, tooltip]) => (
+        {breakdownItems.map(
+          ([label, value, max, Icon, tooltip, progressClass, iconClass]) => (
           <div key={label} className="grid gap-1.5">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="flex items-center gap-2 font-medium">
-                <Icon className="size-4 text-sky-500" aria-hidden="true" />
+                <Icon className={`size-4 ${iconClass}`} aria-hidden="true" />
                 {label}
                 <span title={tooltip}>
                   <HelpCircle
@@ -501,9 +814,13 @@ function ScoreBreakdown({ analysis }: { analysis: AtsAnalysis }) {
                 {value} / {max}
               </span>
             </div>
-            <Progress value={(value / max) * 100} className="h-2" />
+            <Progress
+              value={(value / max) * 100}
+              className={`h-2 bg-slate-100 ${progressClass}`}
+            />
           </div>
-        ))}
+          )
+        )}
       </CardContent>
     </Card>
   );
@@ -515,6 +832,7 @@ function OverviewCard({
   description,
   icon: Icon,
   iconClassName,
+  className,
   onClick,
 }: {
   title: string;
@@ -522,14 +840,15 @@ function OverviewCard({
   description: string;
   icon: typeof Trophy;
   iconClassName: string;
+  className: string;
   onClick: () => void;
 }) {
   return (
     <Card
-      className="rounded-lg border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-blue-500/35 hover:shadow-lg"
+      className={`rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${className}`}
       size="sm"
     >
-      <CardContent className="flex items-center justify-between gap-4 py-1">
+      <CardContent className="flex items-center justify-between gap-4 py-2">
         <button
           className="flex w-full items-center justify-between gap-4 text-left"
           onClick={onClick}
@@ -539,14 +858,14 @@ function OverviewCard({
             <span className="text-sm font-medium text-muted-foreground">
               {title}
             </span>
-            <span className="mt-1 block text-3xl font-semibold tracking-normal">
+            <span className="mt-1 block text-4xl font-semibold tracking-normal">
               {value}
             </span>
-            <span className="mt-1 block text-xs text-muted-foreground">
+            <span className="mt-2 inline-flex rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
               {description}
             </span>
           </span>
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/70 shadow-sm">
             <Icon className={`size-5 ${iconClassName}`} aria-hidden="true" />
           </span>
         </button>
@@ -567,7 +886,7 @@ function EmptyTabState({
   action: string;
 }) {
   return (
-    <Card className="rounded-lg border border-dashed bg-card/80 shadow-sm">
+    <Card className="mx-auto max-w-2xl rounded-2xl border border-dashed border-sky-200 bg-white/80 shadow-sm backdrop-blur">
       <CardHeader className="items-center text-center">
         <span className="grid size-12 place-items-center rounded-lg bg-muted">
           <Icon className="size-6 text-sky-500" aria-hidden="true" />
@@ -599,10 +918,10 @@ function JobMatchLockedState() {
         <span className="grid size-14 place-items-center rounded-lg bg-sky-500/10">
           <SearchCheck className="size-7 text-sky-500" aria-hidden="true" />
         </span>
-        <CardTitle className="text-xl">Job Match Analysis Locked</CardTitle>
+        <CardTitle className="text-xl">No Job Match Yet</CardTitle>
         <CardDescription className="max-w-xl leading-6">
-          Paste a job description during analysis to unlock role-specific match
-          insights.
+          Add a target job description to unlock match level, missing skills,
+          and recruiter-focused recommendations.
         </CardDescription>
       </CardHeader>
       <CardContent className="mx-auto grid w-full max-w-md gap-2 pb-6">
@@ -615,6 +934,9 @@ function JobMatchLockedState() {
             {item}
           </div>
         ))}
+        <Button asChild className="mt-3">
+          <Link href="/">Analyze With Job Description</Link>
+        </Button>
       </CardContent>
     </Card>
   );
@@ -624,16 +946,35 @@ function TopActionItems({ suggestions }: { suggestions: string[] }) {
   const actions = suggestions.slice(0, 3);
 
   return (
-    <Card className="rounded-lg border bg-card shadow-sm">
+    <Card className="rounded-2xl border border-amber-200/80 bg-amber-50/90 shadow-sm transition-all duration-300 hover:shadow-xl">
       <CardHeader className="pb-0">
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="size-5 text-amber-500" aria-hidden="true" />
-          Top 3 Action Items
+          Top Action Items
         </CardTitle>
-        <CardDescription>Fastest improvements to prioritize.</CardDescription>
+        <CardDescription>Fastest resume improvements to prioritize.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResultList items={actions} />
+        {actions.length > 0 ? (
+          <ol className="grid gap-2">
+            {actions.map((item, index) => (
+              <li
+                key={item}
+                className="flex gap-3 rounded-xl border border-amber-200/70 bg-white/70 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm"
+              >
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-amber-500 text-xs font-semibold text-white">
+                  {index + 1}
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <EmptyInlineState
+            title="No action items returned"
+            description="The report did not include specific next edits."
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -784,7 +1125,10 @@ function InterviewQuestionCategory({
   }
 
   return (
-    <AccordionItem value={title}>
+    <AccordionItem
+      value={title}
+      className="rounded-2xl bg-white/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+    >
       <AccordionTrigger>
         <span className="text-left">
           <span className="flex items-center gap-2 font-medium">
@@ -885,11 +1229,7 @@ export default function ResultsPage() {
   const scoreLabel = useMemo(() => getScoreLabel(score), [score]);
   const scoreTone = useMemo(() => getScoreTone(score), [score]);
   const atsGrade = useMemo(() => getAtsGrade(score), [score]);
-  const overallAssessment = useMemo(
-    () => (results ? getOverallAssessment(results.analysis) : ""),
-    [results]
-  );
-
+  const candidateTier = useMemo(() => getCandidateTier(score), [score]);
   async function handleDownloadReport() {
     if (!results || isDownloadingReport) {
       return;
@@ -930,16 +1270,49 @@ export default function ResultsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-muted/30 px-5 py-6 text-foreground sm:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+    <main className="relative isolate min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-5 py-8 text-foreground sm:px-8">
+      <div
+        className="pointer-events-none absolute right-[-8rem] top-[-7rem] -z-10 size-80 rounded-full bg-blue-400/15 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-[26rem] -z-10 size-96 -translate-x-1/2 rounded-full bg-violet-400/10 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute bottom-[-8rem] left-[-7rem] -z-10 size-80 rounded-full bg-emerald-400/15 blur-3xl"
+        aria-hidden="true"
+      />
+
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-              ATS Dashboard
+              ResumeAI
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Resume Analysis Results
+            <h1 className="mt-2 text-4xl font-semibold tracking-normal text-slate-950 sm:text-5xl">
+              Resume Intelligence Report
             </h1>
+            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
+              A recruiter-readable dashboard for ATS strength, role fit, and
+              interview preparation.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["ATS Ready", "AI Powered", "Recruiter Insights"].map(
+                (badge) => (
+                  <span
+                    key={badge}
+                    className="inline-flex items-center rounded-full border border-white/70 bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur"
+                  >
+                    <BadgeCheck
+                      className="mr-1.5 size-3.5 text-emerald-500"
+                      aria-hidden="true"
+                    />
+                    {badge}
+                  </span>
+                )
+              )}
+            </div>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button
@@ -971,7 +1344,8 @@ export default function ResultsPage() {
             value={`${score}/100`}
             description={scoreLabel}
             icon={Trophy}
-            iconClassName={scoreTone.icon}
+            iconClassName="text-blue-600"
+            className="border-blue-200/80 bg-blue-50/90"
             onClick={() => setActiveTab("ats")}
           />
           <OverviewCard
@@ -983,7 +1357,8 @@ export default function ResultsPage() {
                 : getMatchLabel(jobMatchScore)
             }
             icon={SearchCheck}
-            iconClassName="text-sky-500"
+            iconClassName="text-emerald-600"
+            className="border-emerald-200/80 bg-emerald-50/90"
             onClick={() => setActiveTab("job-match")}
           />
           <OverviewCard
@@ -995,7 +1370,8 @@ export default function ResultsPage() {
                 : "Run analysis to generate"
             }
             icon={MessageSquareText}
-            iconClassName="text-emerald-500"
+            iconClassName="text-violet-600"
+            className="border-violet-200/80 bg-violet-50/90"
             onClick={() => setActiveTab("interview")}
           />
         </section>
@@ -1009,10 +1385,10 @@ export default function ResultsPage() {
             </TabsList>
           </div>
 
-          <TabsContent value="ats" className="grid gap-4">
-            <section className="grid gap-4 xl:grid-cols-[360px_1fr]">
+          <TabsContent value="ats" className="grid gap-5">
+            <section className="grid gap-5 xl:grid-cols-[430px_1fr]">
               <div className="grid gap-4">
-                <Card className={`rounded-lg border shadow-sm ${scoreTone.soft}`}>
+                <Card className="rounded-2xl border border-blue-200/80 bg-blue-50/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                   <CardHeader className="pb-0">
                     <CardTitle className="flex items-center gap-2">
                       <Trophy
@@ -1022,14 +1398,14 @@ export default function ResultsPage() {
                       ATS Score
                     </CardTitle>
                     <CardDescription className={scoreTone.text}>
-                      {scoreLabel}
+                      {getScoreInterpretation(score)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-5">
                       <div className="flex items-end gap-2">
                         <span
-                          className={`text-5xl font-semibold tracking-normal ${scoreTone.text}`}
+                          className={`text-6xl font-semibold tracking-normal ${scoreTone.text}`}
                         >
                           {score}
                         </span>
@@ -1043,13 +1419,31 @@ export default function ResultsPage() {
                         </span>
                       </div>
                       <div
-                        className="grid size-20 shrink-0 place-items-center rounded-full"
+                        className="grid size-24 shrink-0 place-items-center rounded-full shadow-inner"
                         style={{
                           background: `conic-gradient(${scoreTone.chart} ${score}%, var(--muted) 0)`,
                         }}
                         aria-label={`ATS score ${score} out of 100`}
                       >
-                        <div className="size-12 rounded-full bg-card ring-1 ring-border" />
+                        <div className="size-16 rounded-full bg-white/90 ring-1 ring-blue-100" />
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-xl border border-blue-200/70 bg-white/70 px-3 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          Grade
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-slate-950">
+                          {atsGrade}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-blue-200/70 bg-white/70 px-3 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          Candidate Tier
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-slate-950">
+                          {candidateTier}
+                        </p>
                       </div>
                     </div>
                     <Progress
@@ -1058,6 +1452,8 @@ export default function ResultsPage() {
                     />
                   </CardContent>
                 </Card>
+
+                <RadarChart analysis={results.analysis} />
 
                 <TopActionItems suggestions={results.analysis.suggestions} />
 
@@ -1068,25 +1464,7 @@ export default function ResultsPage() {
                 <ResumeVerdictCard analysis={results.analysis} />
 
                 <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-                  <Card className="rounded-lg border bg-card shadow-sm">
-                    <CardHeader className="pb-0">
-                      <CardTitle className="flex items-center gap-2">
-                        <Sparkles
-                          className="size-5 text-sky-500"
-                          aria-hidden="true"
-                        />
-                        Overall Assessment
-                      </CardTitle>
-                      <CardDescription>
-                        Concise readout from the resume signals.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {overallAssessment}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <RecruiterSummary analysis={results.analysis} />
 
                   <Card className="rounded-lg border bg-card shadow-sm">
                     <CardHeader className="pb-0">
@@ -1137,8 +1515,36 @@ export default function ResultsPage() {
 
           <TabsContent value="job-match" className="grid gap-4">
             {results.jobMatch ? (
-              <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
-                <Card className="rounded-lg border bg-card shadow-sm">
+              <div className="grid gap-4">
+                <div className="grid gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/90 p-3 shadow-sm sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                      Match Level
+                    </p>
+                    <span className="mt-1 inline-flex rounded-full border border-emerald-300/70 bg-white/80 px-3 py-1 text-sm font-semibold text-emerald-700">
+                      {getMatchLabel(results.jobMatch.matchScore)}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                      Matched Skills
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-emerald-900">
+                      {results.jobMatch.matchedSkills.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                      Missing Skills
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-amber-800">
+                      {results.jobMatch.missingKeywords.length}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
+                <Card className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                   <CardHeader className="pb-0">
                     <CardTitle className="flex items-center gap-2">
                       <SearchCheck
@@ -1162,7 +1568,7 @@ export default function ResultsPage() {
                     </div>
                     <Progress
                       value={results.jobMatch.matchScore}
-                      className="mt-4 h-2 [&_[data-slot=progress-indicator]]:bg-sky-500"
+                      className="mt-4 h-2 bg-white/70 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-emerald-400 [&_[data-slot=progress-indicator]]:to-emerald-600"
                     />
                   </CardContent>
                 </Card>
@@ -1200,7 +1606,7 @@ export default function ResultsPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <SkillChips skills={results.jobMatch.missingKeywords} />
+                      <WarningChips skills={results.jobMatch.missingKeywords} />
                     </CardContent>
                   </Card>
 
@@ -1221,6 +1627,7 @@ export default function ResultsPage() {
                       <ResultList items={results.jobMatch.recommendations} />
                     </CardContent>
                   </Card>
+                </div>
                 </div>
               </div>
             ) : (
@@ -1248,7 +1655,7 @@ export default function ResultsPage() {
                   <Accordion type="multiple">
                     <InterviewQuestionCategory
                       title="Technical Questions"
-                      description="Technology-focused prompts"
+                      description="Focus: Java, Spring Boot, APIs"
                       icon={Code2}
                       iconClassName="text-sky-500"
                       questions={results.interviewQuestions.technicalQuestions}
@@ -1257,7 +1664,7 @@ export default function ResultsPage() {
                     />
                     <InterviewQuestionCategory
                       title="Project Questions"
-                      description="Resume-project prompts"
+                      description="Focus: Resume Projects"
                       icon={PanelsTopLeft}
                       iconClassName="text-violet-500"
                       questions={results.interviewQuestions.projectQuestions}
@@ -1266,7 +1673,7 @@ export default function ResultsPage() {
                     />
                     <InterviewQuestionCategory
                       title="Behavioral Questions"
-                      description="Experience-based prompts"
+                      description="Focus: Collaboration and Leadership"
                       icon={MessageSquareText}
                       iconClassName="text-emerald-500"
                       questions={results.interviewQuestions.behavioralQuestions}
