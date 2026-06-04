@@ -1,7 +1,14 @@
 "use client";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { CheckCircle2, FileText, UploadCloud, XCircle } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Bot,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  UploadCloud,
+  XCircle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDropzone, type FileRejection } from "react-dropzone";
 
@@ -55,6 +62,20 @@ type AnalyzeResumeResponse =
     }
   | { success: false; error?: string };
 
+const ANALYSIS_BUTTON_STAGES = [
+  "Extracting Resume...",
+  "Analyzing ATS...",
+  "Generating Insights...",
+  "Preparing Questions...",
+];
+
+const ANALYSIS_PANEL_STEPS = [
+  "Extracting resume content",
+  "Evaluating ATS compatibility",
+  "Generating personalized insights",
+  "Preparing interview questions",
+];
+
 function formatFileSize(bytes: number) {
   const megabytes = bytes / (1024 * 1024);
 
@@ -85,6 +106,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
   const [jobDescription, setJobDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisStageIndex, setAnalysisStageIndex] = useState(0);
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
@@ -117,13 +139,29 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
 
   const canAnalyze = Boolean(selectedFile);
 
+  useEffect(() => {
+    if (!isAnalyzing) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setAnalysisStageIndex(
+        (current) => (current + 1) % ANALYSIS_BUTTON_STAGES.length
+      );
+    }, 1400);
+
+    return () => window.clearInterval(interval);
+  }, [isAnalyzing]);
+
   async function handleAnalyzeResume() {
     if (!selectedFile || isAnalyzing) {
       return;
     }
 
     setIsAnalyzing(true);
+    setAnalysisStageIndex(0);
     setErrors([]);
+    const trimmedJobDescription = jobDescription.trim();
 
     try {
       const formData = new FormData();
@@ -149,7 +187,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           text: result.text,
-          jobDescription: jobDescription.trim(),
+          jobDescription: trimmedJobDescription,
         }),
       });
       const analysisResult =
@@ -169,7 +207,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
           jobMatch: analysisResult.jobMatch ?? null,
           interviewQuestions: analysisResult.interviewQuestions ?? null,
           resumeText: result.text,
-          jobDescription: jobDescription.trim(),
+          jobDescription: trimmedJobDescription,
           message: analysisResult.message ?? null,
           source: analysisResult.source ?? null,
         })
@@ -180,6 +218,7 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
       setErrors(["Unable to analyze this resume. Please try again."]);
     } finally {
       setIsAnalyzing(false);
+      setAnalysisStageIndex(0);
     }
   }
 
@@ -204,10 +243,16 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
           <Button
             disabled={!canAnalyze || isAnalyzing}
             onClick={handleAnalyzeResume}
-            className="h-12 px-6 text-base shadow-lg shadow-blue-950/10 transition-transform hover:-translate-y-0.5"
+            className="h-12 min-w-48 px-6 text-base shadow-lg shadow-blue-950/10 transition-transform hover:-translate-y-0.5"
           >
-            <UploadCloud className="size-5" aria-hidden="true" />
-            {isAnalyzing ? "Analyzing Resume..." : "Analyze Resume"}
+            {isAnalyzing ? (
+              <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <UploadCloud className="size-5" aria-hidden="true" />
+            )}
+            {isAnalyzing
+              ? ANALYSIS_BUTTON_STAGES[analysisStageIndex]
+              : "Analyze Resume"}
           </Button>
           <Button
             variant="outline"
@@ -311,6 +356,36 @@ export function ResumeUpload({ children }: { children: ReactNode }) {
                 {error}
               </p>
             ))}
+          </div>
+        )}
+
+        {isAnalyzing && (
+          <div className="mt-4 rounded-lg border bg-background/85 p-4 shadow-sm backdrop-blur">
+            <div className="flex items-start gap-3">
+              <span className="relative grid size-11 shrink-0 place-items-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                <span className="absolute size-11 animate-ping rounded-lg bg-blue-500/10" />
+                <Bot className="relative size-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">
+                  🤖 Analyzing your resume...
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {ANALYSIS_PANEL_STEPS.map((step) => (
+                    <div
+                      key={step}
+                      className="flex items-center gap-2 rounded-lg border bg-card/80 px-3 py-2 text-sm text-muted-foreground"
+                    >
+                      <CheckCircle2
+                        className="size-4 text-emerald-500"
+                        aria-hidden="true"
+                      />
+                      <span>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </section>

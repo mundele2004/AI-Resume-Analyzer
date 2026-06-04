@@ -137,6 +137,14 @@
   .floating-shape {
     animation: soft-float 8s ease-in-out infinite;
   }
+
+  .animate-accordion-down {
+    animation: accordion-down 220ms ease-out;
+  }
+
+  .animate-accordion-up {
+    animation: accordion-up 180ms ease-out;
+  }
 }
 
 @keyframes reveal-up {
@@ -160,13 +168,33 @@
   }
 }
 
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
   .animate-reveal,
-  .floating-shape {
+  .floating-shape,
+  .animate-accordion-down,
+  .animate-accordion-up {
     animation: none;
   }
 }
