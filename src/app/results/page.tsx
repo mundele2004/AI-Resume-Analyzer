@@ -1375,6 +1375,12 @@ export default function ResultsPage() {
               <Download className="size-4" aria-hidden="true" />
               {isDownloadingReport ? "Generating PDF..." : "Download Report"}
             </Button>
+            <Button asChild className="h-10 w-full px-4 sm:w-auto">
+              <Link href="/mock-interview">
+                <Sparkles className="size-4" aria-hidden="true" />
+                Start AI Mock Interview
+              </Link>
+            </Button>
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/">
                 <ArrowLeft className="size-4" aria-hidden="true" />
