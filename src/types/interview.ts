@@ -18,10 +18,12 @@ export const INTERVIEW_DIFFICULTIES = [
 ] as const;
 
 export const INTERVIEW_DURATIONS = [5, 10, 15] as const;
+export const INTERVIEW_MODES = ["Text Interview", "Voice Interview"] as const;
 
 export type JobRole = (typeof JOB_ROLES)[number];
 export type InterviewDifficulty = (typeof INTERVIEW_DIFFICULTIES)[number];
 export type InterviewDuration = (typeof INTERVIEW_DURATIONS)[number];
+export type InterviewMode = (typeof INTERVIEW_MODES)[number];
 export type InterviewQuestionType = "technical" | "project" | "behavioral";
 
 export type AtsAnalysisContext = {
@@ -43,6 +45,7 @@ export type InterviewSetupValues = {
   customRole: string;
   difficulty: InterviewDifficulty;
   duration: InterviewDuration;
+  mode: InterviewMode;
 };
 
 export type InterviewQuestion = {

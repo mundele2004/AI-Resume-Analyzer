@@ -2,16 +2,19 @@
 
 import { useCallback, useMemo, useState } from "react";
 
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import type {
   InterviewAnswerRecord,
   InterviewEvaluation,
   InterviewQuestion,
-  InterviewSetupValues,
-  InterviewSummary,
   MockInterviewContext,
 } from "@/types/interview";
-
-type InterviewPhase = "setup" | "generating" | "active" | "summarizing" | "complete";
+import type {
+  VoiceInterviewPhase,
+  VoiceInterviewSummary,
+  VoiceSetupValues,
+} from "@/types/voice-interview";
 
 type ApiErrorResponse = {
   success: false;
@@ -27,10 +30,12 @@ type EvaluateResponse =
   | ApiErrorResponse;
 
 type SummaryResponse =
-  | { success: true; summary: InterviewSummary }
+  | { success: true; summary: Omit<VoiceInterviewSummary, "confidenceScore"> }
   | ApiErrorResponse;
 
-function createLocalSummary(records: InterviewAnswerRecord[]): InterviewSummary {
+function createLocalVoiceSummary(
+  records: InterviewAnswerRecord[]
+): VoiceInterviewSummary {
   const evaluated = records.filter((record) => record.evaluation);
   const average =
     evaluated.length > 0
@@ -43,76 +48,68 @@ function createLocalSummary(records: InterviewAnswerRecord[]): InterviewSummary 
             10
         )
       : 0;
-  const technicalScores = evaluated.filter(
+  const technical = evaluated.filter(
     (record) => record.question.type === "technical"
   );
-  const behavioralScores = evaluated.filter(
+  const behavioral = evaluated.filter(
     (record) => record.question.type === "behavioral"
   );
-  const technicalAverage =
-    technicalScores.length > 0
-      ? Math.round(
-          (technicalScores.reduce(
-            (total, record) => total + (record.evaluation?.score ?? 0),
-            0
-          ) /
-            technicalScores.length) *
-            10
-        )
-      : average;
-  const behavioralAverage =
-    behavioralScores.length > 0
-      ? Math.round(
-          (behavioralScores.reduce(
-            (total, record) => total + (record.evaluation?.score ?? 0),
-            0
-          ) /
-            behavioralScores.length) *
-            10
-        )
-      : average;
+  const confidencePenalty = Math.min(25, records.filter((record) => record.skipped).length * 8);
 
   return {
     overallScore: average,
-    technicalScore: technicalAverage,
+    technicalScore:
+      technical.length > 0
+        ? Math.round(
+            (technical.reduce(
+              (total, record) => total + (record.evaluation?.score ?? 0),
+              0
+            ) /
+              technical.length) *
+              10
+          )
+        : average,
     communicationScore: average,
-    behavioralScore: behavioralAverage,
+    behavioralScore:
+      behavioral.length > 0
+        ? Math.round(
+            (behavioral.reduce(
+              (total, record) => total + (record.evaluation?.score ?? 0),
+              0
+            ) /
+              behavioral.length) *
+              10
+          )
+        : average,
+    confidenceScore: Math.max(0, average - confidencePenalty),
     strengths: evaluated.flatMap((record) => record.evaluation?.strengths ?? []).slice(0, 5),
     weaknesses: evaluated.flatMap((record) => record.evaluation?.weaknesses ?? []).slice(0, 5),
     recommendedTopics: evaluated
       .flatMap((record) => record.evaluation?.improvements ?? [])
       .slice(0, 5),
     nextSteps: [
-      "Review ideal answers for missed details.",
-      "Practice answering the weakest question type again.",
-      "Add clearer project impact and role-specific keywords to the resume.",
+      "Practice concise spoken answers with a clear beginning, evidence, and close.",
+      "Review the ideal answers and rerecord your weakest responses.",
+      "Prepare project stories that explain architecture, tradeoffs, and measurable impact.",
     ],
   };
 }
 
-function withDefaultMode(values: InterviewSetupValues): InterviewSetupValues {
-  return {
-    ...values,
-    mode: values.mode ?? "Text Interview",
-  };
-}
-
-export function useInterview(context: MockInterviewContext | null) {
-  const [phase, setPhase] = useState<InterviewPhase>("setup");
-  const [setup, setSetup] = useState<InterviewSetupValues | null>(null);
+export function useVoiceInterview(context: MockInterviewContext | null) {
+  const speech = useSpeechRecognition();
+  const tts = useSpeechSynthesis();
+  const [phase, setPhase] = useState<VoiceInterviewPhase>("setup");
+  const [setup, setSetup] = useState<VoiceSetupValues | null>(null);
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [records, setRecords] = useState<InterviewAnswerRecord[]>([]);
-  const [summary, setSummary] = useState<InterviewSummary | null>(null);
+  const [latestEvaluation, setLatestEvaluation] =
+    useState<InterviewEvaluation | null>(null);
+  const [summary, setSummary] = useState<VoiceInterviewSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [manualTranscript, setManualTranscript] = useState("");
 
   const currentQuestion = questions[currentIndex] ?? null;
-  const answeredCount = records.filter((record) => !record.skipped).length;
-  const skippedCount = records.filter((record) => record.skipped).length;
-  const progress = questions.length
-    ? Math.min(100, Math.round((records.length / questions.length) * 100))
-    : 0;
   const resolvedRole = useMemo(() => {
     if (!setup) {
       return "";
@@ -120,11 +117,42 @@ export function useInterview(context: MockInterviewContext | null) {
 
     return setup.role === "Custom Role" ? setup.customRole.trim() : setup.role;
   }, [setup]);
+  const progress = questions.length
+    ? Math.min(100, Math.round((records.length / questions.length) * 100))
+    : 0;
+  const activeTranscript = speech.liveTranscript || manualTranscript;
+
+  const speak = useCallback(
+    async (text: string, nextPhase: VoiceInterviewPhase) => {
+      setPhase(nextPhase);
+      await tts.speak(text);
+    },
+    [tts]
+  );
+
+  const speakCurrentQuestion = useCallback(
+    async (question: InterviewQuestion | null = currentQuestion) => {
+      if (!question) {
+        return;
+      }
+
+      await speak(question.question, "asking");
+      setPhase("listening");
+    },
+    [currentQuestion, speak]
+  );
 
   const startInterview = useCallback(
-    async (values: InterviewSetupValues) => {
+    async (values: VoiceSetupValues) => {
       if (!context) {
-        setError("Analyze a resume before starting a mock interview.");
+        setError("Analyze a resume before starting a voice interview.");
+        return;
+      }
+
+      if (!speech.isSupported) {
+        setError(
+          "Speech recognition is not supported in this browser. You can use Text Interview instead."
+        );
         return;
       }
 
@@ -135,12 +163,15 @@ export function useInterview(context: MockInterviewContext | null) {
         return;
       }
 
+      setSetup(values);
       setPhase("generating");
-      setSetup(withDefaultMode(values));
-      setError(null);
-      setSummary(null);
-      setRecords([]);
+      setQuestions([]);
       setCurrentIndex(0);
+      setRecords([]);
+      setLatestEvaluation(null);
+      setSummary(null);
+      setManualTranscript("");
+      setError(null);
 
       try {
         const response = await fetch("/api/generate-interview", {
@@ -157,33 +188,42 @@ export function useInterview(context: MockInterviewContext | null) {
         const payload = (await response.json()) as GenerateResponse;
 
         if (!payload.success) {
-          throw new Error(payload.error ?? "Unable to generate interview questions.");
+          throw new Error(payload.error ?? "Unable to generate voice interview.");
         }
 
         setQuestions(payload.questions);
-        setPhase("active");
-      } catch (generationError) {
+        await speak(
+          `Welcome to your ${role} voice mock interview. I will ask one question at a time. Answer naturally, then stop listening to submit your response.`,
+          "welcome"
+        );
+        await speak(payload.questions[0]?.question ?? "", "asking");
+        setPhase("listening");
+      } catch (startError) {
         setError(
-          generationError instanceof Error
-            ? generationError.message
-            : "Unable to generate interview questions."
+          startError instanceof Error
+            ? startError.message
+            : "Unable to start voice interview."
         );
         setPhase("setup");
       }
     },
-    [context]
+    [context, speak, speech.isSupported]
   );
 
   const summarize = useCallback(
     async (nextRecords: InterviewAnswerRecord[]) => {
       if (!context || !setup) {
-        setSummary(createLocalSummary(nextRecords));
+        const localSummary = createLocalVoiceSummary(nextRecords);
+        setSummary(localSummary);
         setPhase("complete");
+        await speak(
+          `Your interview is complete. Overall score ${localSummary.overallScore}. Recommended topics include ${localSummary.recommendedTopics.join(", ")}.`,
+          "complete"
+        );
         return;
       }
 
       setPhase("summarizing");
-      setError(null);
 
       try {
         const response = await fetch("/api/interview-summary", {
@@ -199,22 +239,35 @@ export function useInterview(context: MockInterviewContext | null) {
         const payload = (await response.json()) as SummaryResponse;
 
         if (!payload.success) {
-          throw new Error(payload.error ?? "Unable to summarize interview.");
+          throw new Error(payload.error ?? "Unable to summarize voice interview.");
         }
 
-        setSummary(payload.summary);
+        const skippedPenalty = Math.min(
+          25,
+          nextRecords.filter((record) => record.skipped).length * 8
+        );
+        const nextSummary: VoiceInterviewSummary = {
+          ...payload.summary,
+          confidenceScore: Math.max(0, payload.summary.communicationScore - skippedPenalty),
+        };
+        setSummary(nextSummary);
+        setPhase("complete");
+        await speak(
+          `Your interview is complete. Overall score ${nextSummary.overallScore}. Technical score ${nextSummary.technicalScore}. Communication score ${nextSummary.communicationScore}.`,
+          "complete"
+        );
       } catch (summaryError) {
+        const localSummary = createLocalVoiceSummary(nextRecords);
         setError(
           summaryError instanceof Error
             ? summaryError.message
-            : "Unable to summarize interview."
+            : "Unable to summarize voice interview."
         );
-        setSummary(createLocalSummary(nextRecords));
-      } finally {
+        setSummary(localSummary);
         setPhase("complete");
       }
     },
-    [context, resolvedRole, setup]
+    [context, resolvedRole, setup, speak]
   );
 
   const moveNext = useCallback(
@@ -227,23 +280,26 @@ export function useInterview(context: MockInterviewContext | null) {
       }
 
       setCurrentIndex(nextIndex);
-      setPhase("active");
+      setManualTranscript("");
+      await speakCurrentQuestion(nextQuestions[nextIndex]);
     },
-    [currentIndex, questions, summarize]
+    [currentIndex, questions, speakCurrentQuestion, summarize]
   );
 
-  const submitAnswer = useCallback(
-    async (answer: string) => {
-      if (!context || !setup || !currentQuestion || isEvaluating) {
+  const submitTranscript = useCallback(
+    async (transcript?: string) => {
+      if (!context || !setup || !currentQuestion) {
         return;
       }
 
-      if (!answer.trim()) {
-        setError("Write an answer before submitting.");
+      const answer = (transcript ?? activeTranscript).trim();
+
+      if (!answer) {
+        setError("No spoken answer was captured. Try recording again.");
         return;
       }
 
-      setIsEvaluating(true);
+      setPhase("processing");
       setError(null);
 
       try {
@@ -261,14 +317,14 @@ export function useInterview(context: MockInterviewContext | null) {
         const payload = (await response.json()) as EvaluateResponse;
 
         if (!payload.success) {
-          throw new Error(payload.error ?? "Unable to evaluate this answer.");
+          throw new Error(payload.error ?? "Unable to evaluate spoken answer.");
         }
 
         const nextRecords = [
           ...records,
           {
             question: currentQuestion,
-            answer: answer.trim(),
+            answer,
             evaluation: payload.evaluation,
             skipped: false,
           },
@@ -280,10 +336,10 @@ export function useInterview(context: MockInterviewContext | null) {
           ? [
               ...questions.slice(0, currentIndex + 1),
               {
-                id: `${currentQuestion.id}-follow-up-${(currentQuestion.followUpDepth ?? 0) + 1}`,
+                id: `${currentQuestion.id}-voice-follow-up-${(currentQuestion.followUpDepth ?? 0) + 1}`,
                 type: currentQuestion.type,
                 question: payload.evaluation.followUpQuestion ?? "",
-                source: "AI follow-up",
+                source: "AI voice follow-up",
                 followUpDepth: (currentQuestion.followUpDepth ?? 0) + 1,
                 parentQuestionId:
                   currentQuestion.parentQuestionId ?? currentQuestion.id,
@@ -292,29 +348,34 @@ export function useInterview(context: MockInterviewContext | null) {
             ]
           : questions;
 
+        setLatestEvaluation(payload.evaluation);
         setRecords(nextRecords);
         setQuestions(nextQuestions);
+        await speak(
+          `Feedback. Score ${payload.evaluation.score} out of 10. ${payload.evaluation.improvements[0] ?? "Keep your answer specific and structured."}`,
+          "feedback"
+        );
         await moveNext(nextRecords, nextQuestions);
       } catch (evaluationError) {
         setError(
           evaluationError instanceof Error
             ? evaluationError.message
-            : "Unable to evaluate this answer."
+            : "Unable to evaluate spoken answer."
         );
-      } finally {
-        setIsEvaluating(false);
+        setPhase("listening");
       }
     },
     [
+      activeTranscript,
       context,
       currentIndex,
       currentQuestion,
-      isEvaluating,
       moveNext,
       questions,
       records,
       resolvedRole,
       setup,
+      speak,
     ]
   );
 
@@ -342,15 +403,17 @@ export function useInterview(context: MockInterviewContext | null) {
   }, [records, summarize]);
 
   const resetInterview = useCallback(() => {
+    tts.stop();
     setPhase("setup");
     setSetup(null);
     setQuestions([]);
     setCurrentIndex(0);
     setRecords([]);
+    setLatestEvaluation(null);
     setSummary(null);
+    setManualTranscript("");
     setError(null);
-    setIsEvaluating(false);
-  }, []);
+  }, [tts]);
 
   return {
     phase,
@@ -359,15 +422,21 @@ export function useInterview(context: MockInterviewContext | null) {
     currentQuestion,
     currentIndex,
     records,
+    latestEvaluation,
     summary,
-    error,
+    error: error ?? speech.error ?? tts.error,
     progress,
-    answeredCount,
-    skippedCount,
-    isEvaluating,
+    transcript: activeTranscript,
+    manualTranscript,
+    setManualTranscript,
+    speech,
+    tts,
+    isSpeaking: tts.isSpeaking,
+    isListening: speech.isListening,
     resolvedRole,
     startInterview,
-    submitAnswer,
+    speakCurrentQuestion,
+    submitTranscript,
     skipQuestion,
     endInterview,
     resetInterview,

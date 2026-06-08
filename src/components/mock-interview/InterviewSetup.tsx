@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BriefcaseBusiness, Clock, Gauge, Play } from "lucide-react";
+import { BriefcaseBusiness, Clock, Gauge, Mic, Play, Type } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +14,11 @@ import {
 import {
   INTERVIEW_DIFFICULTIES,
   INTERVIEW_DURATIONS,
+  INTERVIEW_MODES,
   JOB_ROLES,
   type InterviewDifficulty,
   type InterviewDuration,
+  type InterviewMode,
   type InterviewSetupValues,
   type JobRole,
 } from "@/types/interview";
@@ -35,6 +37,7 @@ export function InterviewSetup({
   const [difficulty, setDifficulty] =
     useState<InterviewDifficulty>("Intermediate");
   const [duration, setDuration] = useState<InterviewDuration>(5);
+  const [mode, setMode] = useState<InterviewMode>("Text Interview");
   const canStart = useMemo(
     () => role !== "Custom Role" || customRole.trim().length > 0,
     [customRole, role]
@@ -117,6 +120,30 @@ export function InterviewSetup({
           </div>
         </div>
 
+        <div className="grid gap-2">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <Mic className="size-4 text-blue-500" aria-hidden="true" />
+            Interview Mode
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {INTERVIEW_MODES.map((item) => {
+              const Icon = item === "Text Interview" ? Type : Mic;
+
+              return (
+                <Button
+                  key={item}
+                  type="button"
+                  variant={mode === item ? "default" : "outline"}
+                  onClick={() => setMode(item)}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {item}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/70">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Resume Signals
@@ -142,11 +169,12 @@ export function InterviewSetup({
               customRole,
               difficulty,
               duration,
+              mode,
             })
           }
         >
           <Play className="size-4" aria-hidden="true" />
-          {isLoading ? "Generating Interview..." : "Start Interview"}
+          {isLoading ? "Generating Interview..." : "Start Mock Interview"}
         </Button>
       </CardContent>
     </Card>
